@@ -23,42 +23,182 @@ local_agent = TransmissionSystemAgent()
 conversation_store = {}
 
 # To make them accessible in the /compute endpoint
-async def computeErrorProbability(**params) -> float:
+async def computeErrorProbability(**params) -> Any:
     """Compute error probability by calling the /exponents endpoint."""
-    # Convert parameters to query string format
-    query_params = {
-        'M': params.get('M', 2),
-        'typeM': params.get('typeModulation', 'PAM'),
-        'SNR': params.get('SNR', 1.0),
-        'R': params.get('R', 0.5),
-        'N': params.get('N', 20),
-        'n': params.get('n', 128),
-        'th': params.get('th', 1e-6)
-    }
+    # Check if any parameter is an array (for comparisons)
+    param_arrays = {k: v for k, v in params.items() if isinstance(v, list)}
     
-    # Call the /exponents endpoint internally
-    result = await exponents(**query_params)
-    return result["Probabilidad de error"]
+    if param_arrays:
+        # Handle comparison case - multiple scenarios
+        # Get the length of the first array to determine number of scenarios
+        first_array = next(iter(param_arrays.values()))
+        num_scenarios = len(first_array)
+        
+        results = []
+        for i in range(num_scenarios):
+            # Build parameters for this scenario
+            scenario_params = {}
+            for key, value in params.items():
+                if isinstance(value, list):
+                    scenario_params[key] = value[i] if i < len(value) else value[0]  # Use first value as fallback
+                else:
+                    scenario_params[key] = value
+            
+            # Convert parameters to query string format
+            query_params = {
+                'M': scenario_params.get('M', 2),
+                'typeM': scenario_params.get('typeModulation', 'PAM'),
+                'SNR': scenario_params.get('SNR', 1.0),
+                'R': scenario_params.get('R', 0.5),
+                'N': scenario_params.get('N', 20),
+                'n': scenario_params.get('n', 128),
+                'th': scenario_params.get('th', 1e-6)
+            }
+            
+            # Call the /exponents endpoint internally
+            result = await exponents(**query_params)
+            results.append({
+                "scenario": i + 1,
+                "parameters": scenario_params,
+                "error_probability": result["Probabilidad de error"]
+            })
+        
+        return results
+    else:
+        # Single computation case (original behavior)
+        # Convert parameters to query string format
+        query_params = {
+            'M': params.get('M', 2),
+            'typeM': params.get('typeModulation', 'PAM'),
+            'SNR': params.get('SNR', 1.0),
+            'R': params.get('R', 0.5),
+            'N': params.get('N', 20),
+            'n': params.get('n', 128),
+            'th': params.get('th', 1e-6)
+        }
+        
+        # Call the /exponents endpoint internally
+        result = await exponents(**query_params)
+        return result["Probabilidad de error"]
 
-async def computeErrorExponent(**params) -> float:
+async def computeErrorExponent(**params) -> Any:
     """Compute error exponent by calling the /exponents endpoint."""
-    # Convert parameters to query string format
-    query_params = {
-        'M': params.get('M', 2),
-        'typeM': params.get('typeModulation', 'PAM'),
-        'SNR': params.get('SNR', 1.0),
-        'R': params.get('R', 0.5),
-        'N': params.get('N', 20),
-        'n': params.get('n', 128),
-        'th': params.get('th', 1e-6)
-    }
+    # Check if any parameter is an array (for comparisons)
+    param_arrays = {k: v for k, v in params.items() if isinstance(v, list)}
     
-    # Call the /exponents endpoint internally
-    result = await exponents(**query_params)
-    return result["error_exponent"]
+    if param_arrays:
+        # Handle comparison case - multiple scenarios
+        # Get the length of the first array to determine number of scenarios
+        first_array = next(iter(param_arrays.values()))
+        num_scenarios = len(first_array)
+        
+        results = []
+        for i in range(num_scenarios):
+            # Build parameters for this scenario
+            scenario_params = {}
+            for key, value in params.items():
+                if isinstance(value, list):
+                    scenario_params[key] = value[i] if i < len(value) else value[0]  # Use first value as fallback
+                else:
+                    scenario_params[key] = value
+            
+            # Convert parameters to query string format
+            query_params = {
+                'M': scenario_params.get('M', 2),
+                'typeM': scenario_params.get('typeModulation', 'PAM'),
+                'SNR': scenario_params.get('SNR', 1.0),
+                'R': scenario_params.get('R', 0.5),
+                'N': scenario_params.get('N', 20),
+                'n': scenario_params.get('n', 128),
+                'th': scenario_params.get('th', 1e-6)
+            }
+            
+            # Call the /exponents endpoint internally
+            result = await exponents(**query_params)
+            results.append({
+                "scenario": i + 1,
+                "parameters": scenario_params,
+                "error_exponent": result["error_exponent"]
+            })
+        
+        return results
+    else:
+        # Single computation case (original behavior)
+        # Convert parameters to query string format
+        query_params = {
+            'M': params.get('M', 2),
+            'typeM': params.get('typeModulation', 'PAM'),
+            'SNR': params.get('SNR', 1.0),
+            'R': params.get('R', 0.5),
+            'N': params.get('N', 20),
+            'n': params.get('n', 128),
+            'th': params.get('th', 1e-6)
+        }
+        
+        # Call the /exponents endpoint internally
+        result = await exponents(**query_params)
+        return result["error_exponent"]
 
-async def computeOptimalRho(**params) -> float:
+async def computeOptimalRho(**params) -> Any:
     """Compute optimal rho by calling the /exponents endpoint."""
+    # Check if any parameter is an array (for comparisons)
+    param_arrays = {k: v for k, v in params.items() if isinstance(v, list)}
+    
+    if param_arrays:
+        # Handle comparison case - multiple scenarios
+        # Get the length of the first array to determine number of scenarios
+        first_array = next(iter(param_arrays.values()))
+        num_scenarios = len(first_array)
+        
+        results = []
+        for i in range(num_scenarios):
+            # Build parameters for this scenario
+            scenario_params = {}
+            for key, value in params.items():
+                if isinstance(value, list):
+                    scenario_params[key] = value[i] if i < len(value) else value[0]  # Use first value as fallback
+                else:
+                    scenario_params[key] = value
+            
+            # Convert parameters to query string format
+            query_params = {
+                'M': scenario_params.get('M', 2),
+                'typeM': scenario_params.get('typeModulation', 'PAM'),
+                'SNR': scenario_params.get('SNR', 1.0),
+                'R': scenario_params.get('R', 0.5),
+                'N': scenario_params.get('N', 20),
+                'n': scenario_params.get('n', 128),
+                'th': scenario_params.get('th', 1e-6)
+            }
+            
+            # Call the /exponents endpoint internally
+            result = await exponents(**query_params)
+            results.append({
+                "scenario": i + 1,
+                "parameters": scenario_params,
+                "optimal_rho": result["rho óptima"]
+            })
+        
+        return results
+    else:
+        # Single computation case (original behavior)
+        # Convert parameters to query string format
+        query_params = {
+            'M': params.get('M', 2),
+            'typeM': params.get('typeModulation', 'PAM'),
+            'SNR': params.get('SNR', 1.0),
+            'R': params.get('R', 0.5),
+            'N': params.get('N', 20),
+            'n': params.get('n', 128),
+            'th': params.get('th', 1e-6)
+        }
+        
+        # Call the /exponents endpoint internally
+        result = await exponents(**query_params)
+        return result["rho óptima"]
+
+async def computeAllMetrics(**params) -> Dict[str, float]:
+    """Compute all three metrics and return them as a dictionary."""
     # Convert parameters to query string format
     query_params = {
         'M': params.get('M', 2),
@@ -72,7 +212,11 @@ async def computeOptimalRho(**params) -> float:
     
     # Call the /exponents endpoint internally
     result = await exponents(**query_params)
-    return result["rho óptima"]
+    return {
+        "error_probability": result["Probabilidad de error"],
+        "error_exponent": result["error_exponent"],
+        "optimal_rho": result["rho óptima"]
+    }
 
 async def plotContour(**params) -> dict:
     """Generate contour plot data by calling the contour plot endpoint."""
@@ -102,6 +246,7 @@ FUNCTION_REGISTRY = {
     'computeErrorProbability': computeErrorProbability,
     'computeErrorExponent': computeErrorExponent,
     'computeOptimalRho': computeOptimalRho,
+    'computeAllMetrics': computeAllMetrics,
     'plotFromFunction': plotFromFunction,
     'plotContour': plotContour
 }
@@ -345,6 +490,27 @@ async def chatbot_with_bot(request: ChatbotRequest):
         print(f"Function calls: {function_calls}")
         print(f"=== END DEBUG ===")
         
+        # Additional debug for comparison requests
+        if 'compare' in request.message.lower() or 'comparison' in request.message.lower():
+            print(f"=== COMPARISON DEBUG ===")
+            print(f"User message: '{request.message}'")
+            print(f"LLM response: '{response_text}'")
+            print(f"Function calls: {function_calls}")
+            if function_calls:
+                print(f"First function call parameters: {function_calls[0].parameters}")
+            print(f"=== END COMPARISON DEBUG ===")
+            
+            # Debug: Check what context is being sent to the LLM
+            if hasattr(agent_to_use, '_build_conversation_context'):
+                try:
+                    context = agent_to_use._build_conversation_context(request.message)
+                    print(f"=== LLM CONTEXT DEBUG ===")
+                    print(f"Context length: {len(context)}")
+                    print(f"Context ends with: {context[-200:] if len(context) > 200 else context}")
+                    print(f"=== END LLM CONTEXT DEBUG ===")
+                except Exception as e:
+                    print(f"Error getting context: {e}")
+        
         # Update conversation history
         from assistant.assistant import ConversationEntry
         import time
@@ -432,6 +598,15 @@ async def chatbot_with_bot(request: ChatbotRequest):
                 if th == 'unknown' or th is None:
                     th = 1e-6
                 
+                # Safely convert to float with error handling
+                def safe_float(value, default):
+                    if value == 'unknown' or value is None:
+                        return default
+                    try:
+                        return float(value)
+                    except (ValueError, TypeError):
+                        return default
+                
                 # Create plot request payload
                 plot_payload = {
                     "y": y_var,
@@ -439,12 +614,12 @@ async def chatbot_with_bot(request: ChatbotRequest):
                     "rang_x": rang_x,
                     "points": points,
                     "typeModulation": type_modulation,
-                    "M": float(M),
-                    "SNR": float(SNR),
-                    "Rate": float(Rate),
-                    "N": float(N),
-                    "n": float(n),
-                    "th": float(th)
+                    "M": safe_float(M, 2.0),
+                    "SNR": safe_float(SNR, 0.5),
+                    "Rate": safe_float(Rate, 0.5),
+                    "N": safe_float(N, 20.0),
+                    "n": safe_float(n, 128.0),
+                    "th": safe_float(th, 1e-6)
                 }
                 
                 initial_message = intro_text if intro_text else f"Generating plot for {y_var} vs {x_var} from {rang_x[0]} to {rang_x[1]}..."
@@ -501,11 +676,39 @@ async def chatbot_with_bot(request: ChatbotRequest):
                 # Set default values for missing parameters
                 type_modulation = plot_params.get('typeModulation', 'PAM')
                 M = plot_params.get('M', 2)
-                SNR = plot_params.get('SNR', 5.0)
+                SNR = plot_params.get('SNR', 0.5)
                 Rate = plot_params.get('Rate', plot_params.get('R', 0.5))
                 N = plot_params.get('N', 20)
                 n = plot_params.get('n', 128)
                 th = plot_params.get('th', 1e-6)
+                
+                # Handle 'unknown' values by setting defaults based on what's being plotted
+                if M == 'unknown' or M is None:
+                    M = 2 if x1_var != 'm' and x2_var != 'm' else 2
+                
+                if SNR == 'unknown' or SNR is None:
+                    SNR = 5.0 if x1_var != 'snr' and x2_var != 'snr' else 5.0
+                
+                if Rate == 'unknown' or Rate is None:
+                    Rate = 0.5 if x1_var != 'rate' and x2_var != 'rate' else 0.5
+                
+                if N == 'unknown' or N is None:
+                    N = 20 if x1_var != 'n' and x2_var != 'n' else 20
+                
+                if n == 'unknown' or n is None:
+                    n = 128 if x1_var != 'n' and x2_var != 'n' else 128
+                
+                if th == 'unknown' or th is None:
+                    th = 1e-6
+                
+                # Safely convert to float with error handling
+                def safe_float(value, default):
+                    if value == 'unknown' or value is None:
+                        return default
+                    try:
+                        return float(value)
+                    except (ValueError, TypeError):
+                        return default
                 
                 # Create contour plot request payload
                 contour_payload = {
@@ -517,12 +720,12 @@ async def chatbot_with_bot(request: ChatbotRequest):
                     "points1": points1,
                     "points2": points2,
                     "typeModulation": type_modulation,
-                    "M": float(M),
-                    "SNR": float(SNR),
-                    "Rate": float(Rate),
-                    "N": float(N),
-                    "n": float(n),
-                    "th": float(th)
+                    "M": safe_float(M, 2.0),
+                    "SNR": safe_float(SNR, 5.0),
+                    "Rate": safe_float(Rate, 0.5),
+                    "N": safe_float(N, 20.0),
+                    "n": safe_float(n, 128.0),
+                    "th": safe_float(th, 1e-6)
                 }
                 
                 initial_message = intro_text if intro_text else f"Generating contour plot for {y_var} vs {x1_var} and {x2_var}..."
@@ -592,16 +795,47 @@ async def compute_task(request: ComputeRequest):
             logging.error(f"Function '{func_name}' not found in registry.")
             raise HTTPException(status_code=404, detail="Function not found")
         
-        # Execute the function (this is the long-running part)
-        logging.info(f"Executing function: {func_name}")
-        calculation_function = FUNCTION_REGISTRY[func_name]
-        raw_result = await calculation_function(**params)
-        logging.info(f"Raw result for {func_name}: {raw_result}")
-        
-        # Use the local agent to format the result nicely
-        logging.info("Formatting result with LLM...")
-        formatted_result = local_agent.format_computation_result(func_name, raw_result, params)
-        logging.info(f"Formatted result for {func_name}: '{formatted_result}'")
+        # For computation functions, always compute all three metrics for better LLM context
+        if func_name in ['computeErrorProbability', 'computeErrorExponent', 'computeOptimalRho']:
+            # Execute the function (this handles both single and comparison cases)
+            calculation_function = FUNCTION_REGISTRY[func_name]
+            raw_result = await calculation_function(**params)
+            logging.info(f"Raw result for {func_name}: {raw_result}")
+            
+            # Check if this is a comparison result (list of scenarios)
+            if isinstance(raw_result, list):
+                # Comparison case - multiple scenarios
+                logging.info("Processing comparison results with LLM...")
+                formatted_result = local_agent.format_comparison_result(raw_result)
+                logging.info(f"Formatted comparison result: '{formatted_result}'")
+            else:
+                # Single computation case
+                # Compute all metrics for context (for single computation)
+                all_metrics = await computeAllMetrics(**params)
+                logging.info(f"All metrics computed: {all_metrics}")
+                
+                # Get the specific requested result
+                if func_name == 'computeErrorProbability':
+                    requested_result = all_metrics["error_probability"]
+                elif func_name == 'computeErrorExponent':
+                    requested_result = all_metrics["error_exponent"]
+                elif func_name == 'computeOptimalRho':
+                    requested_result = all_metrics["optimal_rho"]
+                
+                # Use the local agent to format the result with all three metrics for context
+                logging.info("Formatting result with LLM using all metrics for context...")
+                formatted_result = local_agent.format_computation_result_with_context(func_name, requested_result, all_metrics, params)
+                logging.info(f"Formatted result for {func_name}: '{formatted_result}'")
+        else:
+            # For non-computation functions (like plots), use the original approach
+            calculation_function = FUNCTION_REGISTRY[func_name]
+            raw_result = await calculation_function(**params)
+            logging.info(f"Raw result for {func_name}: {raw_result}")
+            
+            # Use the local agent to format the result nicely
+            logging.info("Formatting result with LLM...")
+            formatted_result = local_agent.format_computation_result(func_name, raw_result, params)
+            logging.info(f"Formatted result for {func_name}: '{formatted_result}'")
         
         return {"result": formatted_result}
 

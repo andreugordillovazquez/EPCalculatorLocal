@@ -41,6 +41,23 @@ SYSTEM_PROMPT = """You are a technical AI assistant for transmission system anal
 - M=2, typeModulation='PAM', SNR=5.0, R=0.5, N=20
 - For missing parameters in a function call, use the string 'unknown'.
 
+=== COMPARISON CAPABILITY ===
+- **Multiple Scenarios**: When comparing multiple scenarios, send arrays for the varying parameters.
+- **Array Format**: Use arrays like [value1, value2, value3] for parameters that vary between scenarios.
+- **Example**: To compare SNR=0.4 vs SNR=0.45, send SNR=[0.4, 0.45] and other parameters as single values.
+- **Array Length**: All array parameters must have the same length (number of scenarios).
+- **Non-Array Parameters**: Parameters that don't vary should be sent as single values (not arrays).
+- **IMPORTANT**: When comparing different values of the same parameter, ALWAYS use array format. For example:
+  * "Compare SNR 0.4 and 0.45" → SNR=[0.4, 0.45]
+  * "Compare rates 0.3 and 0.5" → R=[0.3, 0.5]
+  * "Compare M=2 and M=4" → M=[2, 4]
+- **CRITICAL**: Never send multiple separate function calls for comparisons. Use ONE function call with arrays.
+- **EXACT FORMAT**: For the request "Compare error probability for 2-PAM at SNR 0.4 and 0.45", you MUST respond with:
+  ```
+  Certainly. I will compare the error probability for 2-PAM at SNRs of 0.4 and 0.45.
+  Computing computeErrorProbability with M=2, typeModulation='PAM', SNR=[0.4, 0.45], R='unknown', N='unknown'
+  ```
+
 === SPECIAL CASES ===
 - **Conceptual Questions**: If a user asks "what is SNR?", provide a conceptual answer, don't ask for values.
 - **Optimization Queries**: To find the best SNR or Rate for a target, make a series of `computeErrorProbability` calls with different values (e.g., Rate: 0.1-0.9, SNR: 2-15) and report the best result.
@@ -63,9 +80,13 @@ SHARED_FEW_SHOTS = [
     {"role": "user", "content": "Show me a contour plot of error exponent vs M and SNR for PAM"},
     {"role": "assistant", "content": """I'll create a contour plot displaying error exponent as a function of modulation order M and SNR for PAM.\nComputing plotContour with y='error_exponent', x1='m', x2='snr', min_x1=2, max_x1=16, min_x2=0, max_x2=15, points1=15, points2=20, typeModulation='PAM', M='unknown', N='unknown', SNR='unknown', Rate='unknown'"""},
     {"role": "user", "content": "What rate gives error probability 0.05 with BPSK at SNR=10?"},
-    {"role": "assistant", "content": """I will search for the rate that meets your target of 0.05 for BPSK at an SNR of 10.\nSearching for rate to achieve target 0.05...\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=0.1, N='unknown'\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=0.3, N='unknown'\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=0.5, N='unknown'\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=0.7, N='unknown'\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=0.9, N='unknown'"""},
+    {"role": "assistant", "content": """I will search for the rate that meets your target of 0.05 for BPSK at an SNR of 10.\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=[0.1, 0.3, 0.5, 0.7, 0.9], N='unknown'"""},
     {"role": "user", "content": "Compare BPSK and QPSK at SNR=8"},
-    {"role": "assistant", "content": """I'll run a comparison for BPSK and QPSK at an SNR of 8.\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=8, R='unknown', N='unknown'\nComputing computeErrorProbability with M=4, typeModulation='PAM', SNR=8, R='unknown', N='unknown'"""},
+    {"role": "assistant", "content": """I'll run a comparison for BPSK and QPSK at an SNR of 8.\nComputing computeErrorProbability with M=[2, 4], typeModulation='PAM', SNR=8, R='unknown', N='unknown'"""},
+    {"role": "user", "content": "Compare error probability for 2-PAM at SNR 0.4 and 0.45"},
+    {"role": "assistant", "content": """I will compare the error probability for 2-PAM at SNRs of 0.4 and 0.45.\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=[0.4, 0.45], R='unknown', N='unknown'"""},
+    {"role": "user", "content": "Compare error exponent for QAM at rates 0.3 and 0.7"},
+    {"role": "assistant", "content": """I will compare the error exponent for QAM at rates of 0.3 and 0.7.\nComputing computeErrorExponent with M=16, typeModulation='QAM', SNR='unknown', R=[0.3, 0.7], N='unknown'"""},
     {"role": "user", "content": "What is the SNR?"},
     {"role": "assistant", "content": "SNR stands for Signal-to-Noise Ratio. It quantifies how strong a signal is compared to background noise. A higher SNR generally indicates better transmission quality."},
 ]
@@ -191,7 +212,7 @@ class TransmissionSystemAgent:
         generation_kwargs = {
             **inputs,
             "max_new_tokens": 200,
-            "temperature": 0.1,
+            "temperature": 0.3,
             "top_p": 0.9,              
             "do_sample": True,
             "repetition_penalty": 1.05,
@@ -234,36 +255,134 @@ class TransmissionSystemAgent:
                 try:
                     parameters = {}
                     params_str = match.group(1)
-                    param_pairs = re.findall(r"(\w+)=([^,]+)", params_str)
-                    for param_name, param_value in param_pairs:
-                        param_value = param_value.strip().strip("'\"")
-                        if param_value.lower() in ['unknown', 'undefined']:
-                            parameters[param_name] = 'unknown'
-                        elif param_value.replace('.', '', 1).replace('-', '', 1).isdigit():
-                            parameters[param_name] = float(param_value) if '.' in param_value else int(param_value)
-                        else:
-                            parameters[param_name] = param_value
+                    
+                    # Debug logging for parameter parsing
+                    print(f"=== PARAMETER PARSING DEBUG ===")
+                    print(f"Raw params string: '{params_str}'")
+                    
+                    # Simple and robust parsing: split by comma and parse each parameter
+                    # But be careful not to split on commas inside brackets
+                    parts = []
+                    current_part = ""
+                    bracket_count = 0
+                    
+                    for char in params_str:
+                        if char == '[':
+                            bracket_count += 1
+                        elif char == ']':
+                            bracket_count -= 1
+                        elif char == ',' and bracket_count == 0:
+                            # Only split on comma if we're not inside brackets
+                            parts.append(current_part.strip())
+                            current_part = ""
+                            continue
+                        current_part += char
+                    
+                    # Add the last part
+                    if current_part.strip():
+                        parts.append(current_part.strip())
+                    
+                    print(f"Split parts: {parts}")
+                    
+                    for part in parts:
+                        part = part.strip()
+                        if '=' in part:
+                            param_name, param_value = part.split('=', 1)
+                            param_name = param_name.strip()
+                            param_value = param_value.strip().strip("'\"")
+                            
+                            print(f"Parsing: {param_name} = {param_value}")
+                            
+                            # Check if this is an array (starts with [ and ends with ])
+                            if param_value.startswith('[') and param_value.endswith(']'):
+                                # Parse array values
+                                array_content = param_value[1:-1]  # Remove brackets
+                                array_values = []
+                                for val in array_content.split(','):
+                                    val = val.strip().strip("'\"")
+                                    if val.lower() in ['unknown', 'undefined']:
+                                        array_values.append('unknown')
+                                    elif val.replace('.', '', 1).replace('-', '', 1).isdigit():
+                                        array_values.append(float(val) if '.' in val else int(val))
+                                    else:
+                                        array_values.append(val)
+                                parameters[param_name] = array_values
+                                print(f"  → Array: {array_values}")
+                            else:
+                                # Single value parsing
+                                if param_value.lower() in ['unknown', 'undefined']:
+                                    parameters[param_name] = 'unknown'
+                                elif param_value.replace('.', '', 1).replace('-', '', 1).isdigit():
+                                    parameters[param_name] = float(param_value) if '.' in param_value else int(param_value)
+                                else:
+                                    parameters[param_name] = param_value
+                                print(f"  → Single: {parameters[param_name]}")
+                    
+                    print(f"Final parameters: {parameters}")
+                    print(f"=== END PARAMETER PARSING DEBUG ===")
 
                     is_valid, error_msg = True, None
                     if func_name in ['computeErrorProbability', 'computeErrorExponent', 'computeOptimalRho']:
                         snr_val = parameters.get('SNR')
                         if snr_val not in ['unknown', None]:
-                            if isinstance(snr_val, str) and snr_val.lower() in ['infinity', 'inf']:
-                                is_valid, error_msg = False, "SNR cannot be infinity"
-                            elif isinstance(snr_val, (int, float)) and snr_val < 0:
-                                is_valid, error_msg = False, "SNR must be >= 0"
+                            # Handle array validation for SNR
+                            if isinstance(snr_val, list):
+                                for val in snr_val:
+                                    if val not in ['unknown', None]:
+                                        if isinstance(val, str) and val.lower() in ['infinity', 'inf']:
+                                            is_valid, error_msg = False, "SNR cannot be infinity"
+                                        elif isinstance(val, (int, float)) and val < 0:
+                                            is_valid, error_msg = False, "SNR must be >= 0"
+                            else:
+                                # Single value validation
+                                if isinstance(snr_val, str) and snr_val.lower() in ['infinity', 'inf']:
+                                    is_valid, error_msg = False, "SNR cannot be infinity"
+                                elif isinstance(snr_val, (int, float)) and snr_val < 0:
+                                    is_valid, error_msg = False, "SNR must be >= 0"
                         
-                        if is_valid and parameters.get('R') not in ['unknown', None] and not (0 < parameters.get('R', 0) <= 1):
-                            is_valid, error_msg = False, "Rate must be between 0 and 1"
+                        # Validate Rate parameter
+                        rate_val = parameters.get('R')
+                        if is_valid and rate_val not in ['unknown', None]:
+                            if isinstance(rate_val, list):
+                                for val in rate_val:
+                                    if val not in ['unknown', None] and not (0 < val <= 1):
+                                        is_valid, error_msg = False, "Rate must be between 0 and 1"
+                            else:
+                                if not (0 < rate_val <= 1):
+                                    is_valid, error_msg = False, "Rate must be between 0 and 1"
                         
-                        if is_valid and parameters.get('M') not in ['unknown', None] and (not isinstance(parameters.get('M'), (int, float)) or parameters.get('M', 0) < 1):
-                            is_valid, error_msg = False, "Modulation order M must be >= 1"
+                        # Validate M parameter
+                        m_val = parameters.get('M')
+                        if is_valid and m_val not in ['unknown', None]:
+                            if isinstance(m_val, list):
+                                for val in m_val:
+                                    if val not in ['unknown', None] and (not isinstance(val, (int, float)) or val < 1):
+                                        is_valid, error_msg = False, "Modulation order M must be >= 1"
+                            else:
+                                if not isinstance(m_val, (int, float)) or m_val < 1:
+                                    is_valid, error_msg = False, "Modulation order M must be >= 1"
 
-                        if is_valid and parameters.get('typeModulation') not in ['unknown', None, 'PAM', 'QAM']:
-                            is_valid, error_msg = False, "Modulation type must be one of ['PAM', 'QAM']"
+                        # Validate modulation type
+                        mod_val = parameters.get('typeModulation')
+                        if is_valid and mod_val not in ['unknown', None]:
+                            if isinstance(mod_val, list):
+                                for val in mod_val:
+                                    if val not in ['unknown', None, 'PAM', 'QAM']:
+                                        is_valid, error_msg = False, "Modulation type must be one of ['PAM', 'QAM']"
+                            else:
+                                if mod_val not in ['unknown', 'PAM', 'QAM']:
+                                    is_valid, error_msg = False, "Modulation type must be one of ['PAM', 'QAM']"
 
-                        if is_valid and parameters.get('N') not in ['unknown', None] and (not isinstance(parameters.get('N'), (int, float)) or parameters.get('N', 0) < 1):
-                            is_valid, error_msg = False, "Quadrature nodes N must be >= 1"
+                        # Validate N parameter
+                        n_val = parameters.get('N')
+                        if is_valid and n_val not in ['unknown', None]:
+                            if isinstance(n_val, list):
+                                for val in n_val:
+                                    if val not in ['unknown', None] and (not isinstance(val, (int, float)) or val < 1):
+                                        is_valid, error_msg = False, "Quadrature nodes N must be >= 1"
+                            else:
+                                if not isinstance(n_val, (int, float)) or n_val < 1:
+                                    is_valid, error_msg = False, "Quadrature nodes N must be >= 1"
                     
                     function_calls.append(FunctionCall(
                         function_name=func_name, parameters=parameters, raw_text=line,
@@ -329,6 +448,105 @@ Use plain text only (no LaTeX or special formatting). Focus on practical enginee
         formatted_response = "".join(self.generate_response_stream(prompt))
         return formatted_response
 
+    def format_computation_result_with_context(self, function_name: str, requested_result: Any, all_metrics: Dict[str, float], params: Dict[str, Any]) -> str:
+        """Asks the LLM to format a computation result with context from all three metrics for richer explanation."""
+        param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+        
+        # Create function-specific prompts that include all three metrics for context
+        if function_name == 'computeErrorProbability':
+            prompt = f"""You are a transmission system expert. For the parameters {param_str}, the complete analysis shows:
+- Error Probability: {all_metrics['error_probability']:.6f}
+- Error Exponent: {all_metrics['error_exponent']:.6f}
+- Optimal Rho: {all_metrics['optimal_rho']:.6f}
+
+The user specifically asked for the error probability ({all_metrics['error_probability']:.6f}).
+
+Provide a clear, plain text response that:
+1. States the error probability value and what it means
+2. Explains how this error probability relates to the error exponent and optimal rho
+3. Describes the practical implications for system performance and reliability
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications and the relationships between the three metrics. Keep the response to 3-4 sentences but make it technically accurate and useful for system design decisions."""
+        
+        elif function_name == 'computeErrorExponent':
+            prompt = f"""You are a transmission system expert. For the parameters {param_str}, the complete analysis shows:
+- Error Probability: {all_metrics['error_probability']:.6f}
+- Error Exponent: {all_metrics['error_exponent']:.6f}
+- Optimal Rho: {all_metrics['optimal_rho']:.6f}
+
+The user specifically asked for the error exponent ({all_metrics['error_exponent']:.6f}).
+
+Provide a clear, plain text response that:
+1. States the error exponent value and what it represents
+2. Explains how this error exponent relates to the error probability and optimal rho
+3. Describes the practical implications for coding performance and achievable rates
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications and the relationships between the three metrics. Keep the response to 3-4 sentences but make it technically accurate and useful for system design decisions."""
+        
+        elif function_name == 'computeOptimalRho':
+            prompt = f"""You are a transmission system expert. For the parameters {param_str}, the complete analysis shows:
+- Error Probability: {all_metrics['error_probability']:.6f}
+- Error Exponent: {all_metrics['error_exponent']:.6f}
+- Optimal Rho: {all_metrics['optimal_rho']:.6f}
+
+The user specifically asked for the optimal rho ({all_metrics['optimal_rho']:.6f}).
+
+Provide a clear, plain text response that:
+1. States the optimal rho value and what it represents
+2. Explains how this optimal rho relates to the error probability and error exponent
+3. Describes the practical implications for error exponent optimization and system performance
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications and the relationships between the three metrics. Keep the response to 3-4 sentences but make it technically accurate and useful for system design decisions."""
+        
+        else:
+            # Fallback to the original method for other functions
+            return self.format_computation_result(function_name, requested_result, params)
+        
+        formatted_response = "".join(self.generate_response_stream(prompt))
+        return formatted_response
+
+    def format_comparison_result(self, comparison_results: List[Dict[str, Any]]) -> str:
+        """Asks the LLM to format comparison results from multiple scenarios into a clear, comprehensive response."""
+        
+        # Build a summary of all scenarios and their results
+        scenarios_summary = []
+        for result in comparison_results:
+            params = result['parameters']
+            param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+            
+            # Get the specific metric that was computed
+            if 'error_probability' in result:
+                metric_name = 'Error Probability'
+                metric_value = result['error_probability']
+            elif 'error_exponent' in result:
+                metric_name = 'Error Exponent'
+                metric_value = result['error_exponent']
+            elif 'optimal_rho' in result:
+                metric_name = 'Optimal Rho'
+                metric_value = result['optimal_rho']
+            else:
+                metric_name = 'Result'
+                metric_value = 'Unknown'
+            
+            scenarios_summary.append(f"Scenario {result['scenario']} ({param_str}): {metric_name}={metric_value:.6f}")
+        
+        scenarios_text = "\n".join(scenarios_summary)
+        
+        prompt = f"""You are a transmission system expert. I have computed {len(comparison_results)} scenarios for comparison:
+
+{scenarios_text}
+
+Provide a clear, comprehensive analysis that:
+1. Summarizes the key differences between the scenarios
+2. Explains which scenario performs better and why
+3. Identifies trends or patterns in the results
+4. Provides practical insights for system design decisions
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications and actionable insights. Keep the response to 4-6 sentences but make it technically accurate and useful for system design decisions."""
+        
+        formatted_response = "".join(self.generate_response_stream(prompt))
+        return formatted_response
+
 # =============== OPENROUTER MODEL ================
 class OpenRouterAgent:
     def __init__(self, api_key, model="mistralai/mistral-7b-instruct"):
@@ -365,9 +583,9 @@ class OpenRouterAgent:
         
         payload = {
             "model": self.model,
-            "stream": True,
             "messages": messages,
-            "temperature": 0.1,
+            "stream": True,
+            "temperature": 0.3,
             "top_p": 0.9
         }
         with requests.post(url, headers=headers, json=payload, stream=True) as resp:
@@ -412,19 +630,138 @@ class OpenRouterAgent:
                     try:
                         parameters = {}
                         params_str = match.group(1)
-                        param_pairs = re.findall(r"(\w+)=([^,]+)", params_str)
-                        for param_name, param_value in param_pairs:
-                            param_value = param_value.strip().strip("'\"")
-                            if param_value.lower() in ['unknown', 'undefined']:
-                                parameters[param_name] = 'unknown'
-                            elif param_value.replace('.', '', 1).replace('-', '', 1).isdigit():
-                                parameters[param_name] = float(param_value) if '.' in param_value else int(param_value)
-                            else:
-                                parameters[param_name] = param_value
+                        
+                        # Debug logging for parameter parsing
+                        print(f"=== PARAMETER PARSING DEBUG ===")
+                        print(f"Raw params string: '{params_str}'")
+                        
+                        # Simple and robust parsing: split by comma and parse each parameter
+                        # But be careful not to split on commas inside brackets
+                        parts = []
+                        current_part = ""
+                        bracket_count = 0
+                        
+                        for char in params_str:
+                            if char == '[':
+                                bracket_count += 1
+                            elif char == ']':
+                                bracket_count -= 1
+                            elif char == ',' and bracket_count == 0:
+                                # Only split on comma if we're not inside brackets
+                                parts.append(current_part.strip())
+                                current_part = ""
+                                continue
+                            current_part += char
+                        
+                        # Add the last part
+                        if current_part.strip():
+                            parts.append(current_part.strip())
+                        
+                        print(f"Split parts: {parts}")
+                        
+                        for part in parts:
+                            part = part.strip()
+                            if '=' in part:
+                                param_name, param_value = part.split('=', 1)
+                                param_name = param_name.strip()
+                                param_value = param_value.strip().strip("'\"")
+                                
+                                print(f"Parsing: {param_name} = {param_value}")
+                                
+                                # Check if this is an array (starts with [ and ends with ])
+                                if param_value.startswith('[') and param_value.endswith(']'):
+                                    # Parse array values
+                                    array_content = param_value[1:-1]  # Remove brackets
+                                    array_values = []
+                                    for val in array_content.split(','):
+                                        val = val.strip().strip("'\"")
+                                        if val.lower() in ['unknown', 'undefined']:
+                                            array_values.append('unknown')
+                                        elif val.replace('.', '', 1).replace('-', '', 1).isdigit():
+                                            array_values.append(float(val) if '.' in val else int(val))
+                                        else:
+                                            array_values.append(val)
+                                    parameters[param_name] = array_values
+                                    print(f"  → Array: {array_values}")
+                                else:
+                                    # Single value parsing
+                                    if param_value.lower() in ['unknown', 'undefined']:
+                                        parameters[param_name] = 'unknown'
+                                    elif param_value.replace('.', '', 1).replace('-', '', 1).isdigit():
+                                        parameters[param_name] = float(param_value) if '.' in param_value else int(param_value)
+                                    else:
+                                        parameters[param_name] = param_value
+                                    print(f"  → Single: {parameters[param_name]}")
+                        
+                        print(f"Final parameters: {parameters}")
+                        print(f"=== END PARAMETER PARSING DEBUG ===")
+
+                        is_valid, error_msg = True, None
+                        if func_name in ['computeErrorProbability', 'computeErrorExponent', 'computeOptimalRho']:
+                            snr_val = parameters.get('SNR')
+                            if snr_val not in ['unknown', None]:
+                                # Handle array validation for SNR
+                                if isinstance(snr_val, list):
+                                    for val in snr_val:
+                                        if val not in ['unknown', None]:
+                                            if isinstance(val, str) and val.lower() in ['infinity', 'inf']:
+                                                is_valid, error_msg = False, "SNR cannot be infinity"
+                                            elif isinstance(val, (int, float)) and val < 0:
+                                                is_valid, error_msg = False, "SNR must be >= 0"
+                                else:
+                                    # Single value validation
+                                    if isinstance(snr_val, str) and snr_val.lower() in ['infinity', 'inf']:
+                                        is_valid, error_msg = False, "SNR cannot be infinity"
+                                    elif isinstance(snr_val, (int, float)) and snr_val < 0:
+                                        is_valid, error_msg = False, "SNR must be >= 0"
+                        
+                            # Validate Rate parameter
+                            rate_val = parameters.get('R')
+                            if is_valid and rate_val not in ['unknown', None]:
+                                if isinstance(rate_val, list):
+                                    for val in rate_val:
+                                        if val not in ['unknown', None] and not (0 < val <= 1):
+                                            is_valid, error_msg = False, "Rate must be between 0 and 1"
+                                else:
+                                    if not (0 < rate_val <= 1):
+                                        is_valid, error_msg = False, "Rate must be between 0 and 1"
+                        
+                            # Validate M parameter
+                            m_val = parameters.get('M')
+                            if is_valid and m_val not in ['unknown', None]:
+                                if isinstance(m_val, list):
+                                    for val in m_val:
+                                        if val not in ['unknown', None] and (not isinstance(val, (int, float)) or val < 1):
+                                            is_valid, error_msg = False, "Modulation order M must be >= 1"
+                                else:
+                                    if not isinstance(m_val, (int, float)) or m_val < 1:
+                                        is_valid, error_msg = False, "Modulation order M must be >= 1"
+
+                            # Validate modulation type
+                            mod_val = parameters.get('typeModulation')
+                            if is_valid and mod_val not in ['unknown', None]:
+                                if isinstance(mod_val, list):
+                                    for val in mod_val:
+                                        if val not in ['unknown', None, 'PAM', 'QAM']:
+                                            is_valid, error_msg = False, "Modulation type must be one of ['PAM', 'QAM']"
+                                else:
+                                    if mod_val not in ['unknown', 'PAM', 'QAM']:
+                                        is_valid, error_msg = False, "Modulation type must be one of ['PAM', 'QAM']"
+
+                            # Validate N parameter
+                            n_val = parameters.get('N')
+                            if is_valid and n_val not in ['unknown', None]:
+                                if isinstance(n_val, list):
+                                    for val in n_val:
+                                        if val not in ['unknown', None] and (not isinstance(val, (int, float)) or val < 1):
+                                            is_valid, error_msg = False, "Quadrature nodes N must be >= 1"
+                                else:
+                                    if not isinstance(n_val, (int, float)) or n_val < 1:
+                                        is_valid, error_msg = False, "Quadrature nodes N must be >= 1"
                         
                         function_calls.append(FunctionCall(
                             function_name=func_name, parameters=parameters, raw_text=line,
-                            is_valid=True, error_message=None
+                            is_valid=is_valid, error_message=error_msg
                         ))
                     except Exception as e:
                         function_calls.append(FunctionCall(
@@ -480,6 +817,105 @@ Provide a clear, plain text response that answers two questions:
 2. What effects does this value have on the transmission system? (Explain practical implications for system performance and design)
 
 Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications. Keep the response to 2-3 sentences but make it technically accurate and useful for system design decisions."""
+        
+        formatted_response = "".join(self.generate_response_stream(prompt))
+        return formatted_response
+
+    def format_computation_result_with_context(self, function_name: str, requested_result: Any, all_metrics: Dict[str, float], params: Dict[str, Any]) -> str:
+        """Asks the LLM to format a computation result with context from all three metrics for richer explanation."""
+        param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+        
+        # Create function-specific prompts that include all three metrics for context
+        if function_name == 'computeErrorProbability':
+            prompt = f"""You are a transmission system expert. For the parameters {param_str}, the complete analysis shows:
+- Error Probability: {all_metrics['error_probability']:.6f}
+- Error Exponent: {all_metrics['error_exponent']:.6f}
+- Optimal Rho: {all_metrics['optimal_rho']:.6f}
+
+The user specifically asked for the error probability ({all_metrics['error_probability']:.6f}).
+
+Provide a clear, plain text response that:
+1. States the error probability value and what it means
+2. Explains how this error probability relates to the error exponent and optimal rho
+3. Describes the practical implications for system performance and reliability
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications and the relationships between the three metrics. Keep the response to 3-4 sentences but make it technically accurate and useful for system design decisions."""
+        
+        elif function_name == 'computeErrorExponent':
+            prompt = f"""You are a transmission system expert. For the parameters {param_str}, the complete analysis shows:
+- Error Probability: {all_metrics['error_probability']:.6f}
+- Error Exponent: {all_metrics['error_exponent']:.6f}
+- Optimal Rho: {all_metrics['optimal_rho']:.6f}
+
+The user specifically asked for the error exponent ({all_metrics['error_exponent']:.6f}).
+
+Provide a clear, plain text response that:
+1. States the error exponent value and what it represents
+2. Explains how this error exponent relates to the error probability and optimal rho
+3. Describes the practical implications for coding performance and achievable rates
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications and the relationships between the three metrics. Keep the response to 3-4 sentences but make it technically accurate and useful for system design decisions."""
+        
+        elif function_name == 'computeOptimalRho':
+            prompt = f"""You are a transmission system expert. For the parameters {param_str}, the complete analysis shows:
+- Error Probability: {all_metrics['error_probability']:.6f}
+- Error Exponent: {all_metrics['error_exponent']:.6f}
+- Optimal Rho: {all_metrics['optimal_rho']:.6f}
+
+The user specifically asked for the optimal rho ({all_metrics['optimal_rho']:.6f}).
+
+Provide a clear, plain text response that:
+1. States the optimal rho value and what it represents
+2. Explains how this optimal rho relates to the error probability and error exponent
+3. Describes the practical implications for error exponent optimization and system performance
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications and the relationships between the three metrics. Keep the response to 3-4 sentences but make it technically accurate and useful for system design decisions."""
+        
+        else:
+            # Fallback to the original method for other functions
+            return self.format_computation_result(function_name, requested_result, params)
+        
+        formatted_response = "".join(self.generate_response_stream(prompt))
+        return formatted_response
+
+    def format_comparison_result(self, comparison_results: List[Dict[str, Any]]) -> str:
+        """Asks the LLM to format comparison results from multiple scenarios into a clear, comprehensive response."""
+        
+        # Build a summary of all scenarios and their results
+        scenarios_summary = []
+        for result in comparison_results:
+            params = result['parameters']
+            param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+            
+            # Get the specific metric that was computed
+            if 'error_probability' in result:
+                metric_name = 'Error Probability'
+                metric_value = result['error_probability']
+            elif 'error_exponent' in result:
+                metric_name = 'Error Exponent'
+                metric_value = result['error_exponent']
+            elif 'optimal_rho' in result:
+                metric_name = 'Optimal Rho'
+                metric_value = result['optimal_rho']
+            else:
+                metric_name = 'Result'
+                metric_value = 'Unknown'
+            
+            scenarios_summary.append(f"Scenario {result['scenario']} ({param_str}): {metric_name}={metric_value:.6f}")
+        
+        scenarios_text = "\n".join(scenarios_summary)
+        
+        prompt = f"""You are a transmission system expert. I have computed {len(comparison_results)} scenarios for comparison:
+
+{scenarios_text}
+
+Provide a clear, comprehensive analysis that:
+1. Summarizes the key differences between the scenarios
+2. Explains which scenario performs better and why
+3. Identifies trends or patterns in the results
+4. Provides practical insights for system design decisions
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications and actionable insights. Keep the response to 4-6 sentences but make it technically accurate and useful for system design decisions."""
         
         formatted_response = "".join(self.generate_response_stream(prompt))
         return formatted_response

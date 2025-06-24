@@ -164,6 +164,8 @@ function runPlot(parameters, isContour = false) {
     }
 
     if (isContour) {
+        console.log('Processing contour plot with parameters:', parameters);
+        
         if (isNaN(parameters.min2) || isNaN(parameters.max2) || parameters.min2 >= parameters.max2) {
             console.error('Invalid range for X2 axis');
             return;
@@ -185,17 +187,25 @@ function runPlot(parameters, isContour = false) {
             n: parseFloat(parameters.n) || 0,
             th: parseFloat(parameters.th) || 0
         };
+        
+        console.log('Sending contour plot payload:', payload);
 
         fetch("/plot_contour", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Contour plot response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Contour plot response data:', data);
             drawContourPlot(data.x1, data.x2, data.z);
         })
-        .catch(error => console.error("Error:", error));
+        .catch(error => {
+            console.error("Error in contour plot:", error);
+        });
     } else {
         const lineType = document.getElementById('lineType').value || '-';
         let color = document.getElementById('lineColor').value;
@@ -226,7 +236,23 @@ function runPlot(parameters, isContour = false) {
         })
         .then(response => response.json())
         .then(data => {
-            drawInteractivePlot(data.x, data.y, data.opts || {});
+            // Info que passarem per a poder visualitzar les dades
+            const metadata = {
+                M: parameters.M,
+                SNR: parameters.SNR,
+                Rate: parameters.Rate,
+                N: parameters.N,
+                n: parameters.n,
+                th: parameters.th,
+                typeModulation: parameters.typeModulation,
+                xVar: parameters.x
+            };
+            drawInteractivePlot(data.x, data.y, {
+                color: color,
+                lineType: lineType,
+                plotType: parameters.plotType || 'linear',
+                metadata
+            });
         })
         .catch(error => console.error("Error:", error));
     }
@@ -378,21 +404,58 @@ function sendMessage() {
                 safelySetValue('R', data.task.parameters.Rate, 0.5);
                 safelySetValue('N', data.task.parameters.N, 20);
                 safelySetValue('yVar', data.task.parameters.y && data.task.parameters.y.toLowerCase(), "error_probability");
-                if (data.task.parameters.x && data.task.parameters.x.toLowerCase() !== 'n') {
-                    safelySetValue('xVar', data.task.parameters.x.toLowerCase(), 'm');
-                } else {
-                    safelySetValue('xVar', data.task.parameters.x, 'n');
-                }
-                safelySetValue('points', data.task.parameters.points, 50);
-                safelySetValue('xRange', `${data.task.parameters.rang_x[0]},${data.task.parameters.rang_x[1]}`, `${1},${100}`);
                 
-                // Convert to our unified format
-                const plotParams = {
-                    ...data.task.parameters,
-                    plotType: 'linear', // Default for LLM requests
-                    selectedPlotType: 'line'
-                };
-                runPlot(plotParams, false);
+                // Check if this is a contour plot
+                const isContourPlot = data.task.is_contour_plot || false;
+                
+                if (isContourPlot) {
+                    // Contour plot - set up both x1 and x2 variables
+                    safelySetValue('plotType', 'contour', 'lineLog');
+                    safelySetValue('xVar', data.task.parameters.x1 && data.task.parameters.x1.toLowerCase(), 'snr');
+                    safelySetValue('xVar2', data.task.parameters.x2 && data.task.parameters.x2.toUpperCase(), 'Rate');
+                    safelySetValue('points', data.task.parameters.points1, 20);
+                    safelySetValue('points2', data.task.parameters.points2, 20);
+                    safelySetValue('xRange', `${data.task.parameters.rang_x1[0]},${data.task.parameters.rang_x1[1]}`, `${0},${20}`);
+                    safelySetValue('xRange2', `${data.task.parameters.rang_x2[0]},${data.task.parameters.rang_x2[1]}`, `${0.1},${0.9}`);
+                    
+                    // Trigger form update to show contour plot fields
+                    setTimeout(() => onLineTypeChange(), 10);
+                    
+                    // Convert to our unified format for contour plots
+                    const plotParams = {
+                        ...data.task.parameters,
+                        x: data.task.parameters.x1,
+                        x2: data.task.parameters.x2,
+                        min: data.task.parameters.rang_x1[0],
+                        max: data.task.parameters.rang_x1[1],
+                        min2: data.task.parameters.rang_x2[0],
+                        max2: data.task.parameters.rang_x2[1],
+                        points: data.task.parameters.points1,
+                        points2: data.task.parameters.points2,
+                        plotType: 'contour',
+                        selectedPlotType: 'contour'
+                    };
+                    runPlot(plotParams, true);
+                } else {
+                    // Regular plot
+                    if (data.task.parameters.x && data.task.parameters.x.toLowerCase() !== 'n') {
+                        safelySetValue('xVar', data.task.parameters.x.toLowerCase(), 'm');
+                    } else {
+                        safelySetValue('xVar', data.task.parameters.x, 'n');
+                    }
+                    safelySetValue('points', data.task.parameters.points, 50);
+                    safelySetValue('xRange', `${data.task.parameters.rang_x[0]},${data.task.parameters.rang_x[1]}`, `${1},${100}`);
+                    
+                    // Convert to our unified format
+                    const plotParams = {
+                        ...data.task.parameters,
+                        min: data.task.parameters.rang_x[0],
+                        max: data.task.parameters.rang_x[1],
+                        plotType: 'linear', // Default for LLM requests
+                        selectedPlotType: 'line'
+                    };
+                    runPlot(plotParams, false);
+                }
             }
         }
     })
@@ -728,6 +791,8 @@ function plotManually() {
 
 
 function drawContourPlot(x1, x2, zMatrix) {
+    console.log('drawContourPlot called with:', { x1, x2, zMatrix });
+    
     // 1) Generar nou plotId
     const plotId = `plot-${plotIdCounter++}`;
   
@@ -736,6 +801,8 @@ function drawContourPlot(x1, x2, zMatrix) {
     const x1Text = document.getElementById('xVar').selectedOptions[0].text;
     const x2Text = document.getElementById('xVar2').selectedOptions[0].text;
     const label = `${yText} / ${x1Text} & ${x2Text}`;
+    
+    console.log('Contour plot label:', label);
   
     // 3) Color
     const gradient = 'linear-gradient(90deg, #ffffcc, #a1dab4, #41b6c4, #2c7fb8, #253494)';
@@ -746,6 +813,8 @@ function drawContourPlot(x1, x2, zMatrix) {
       label,
       color: gradient
     });
+    
+    console.log('Added contour plot to activePlots:', activePlots[activePlots.length - 1]);
   
     // 5) Re-renderitzar tot
     renderAll();
