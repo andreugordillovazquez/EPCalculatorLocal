@@ -34,6 +34,7 @@ SYSTEM_PROMPT = """You are a technical AI assistant for transmission system anal
 - `computeErrorExponent(M, typeModulation, SNR, R, N)`
 - `computeOptimalRho(M, typeModulation, SNR, R, N)`
 - `plotFromFunction(y, x, min, max, points, typeModulation, M, N, SNR, Rate)`
+- `plotContour(y, x1, x2, min_x1, max_x1, min_x2, max_x2, points1, points2, typeModulation, M, N, SNR, Rate)`
 
 === PARAMETER NOTES ===
 - Use default values if a parameter is missing:
@@ -43,7 +44,7 @@ SYSTEM_PROMPT = """You are a technical AI assistant for transmission system anal
 === SPECIAL CASES ===
 - **Conceptual Questions**: If a user asks "what is SNR?", provide a conceptual answer, don't ask for values.
 - **Optimization Queries**: To find the best SNR or Rate for a target, make a series of `computeErrorProbability` calls with different values (e.g., Rate: 0.1-0.9, SNR: 2-15) and report the best result.
-- **Plotting Queries**: For "plot X vs Y", use `plotFromFunction`.
+- **Plotting Queries**: For "plot X vs Y", use `plotFromFunction`. For "contour plot of X vs Y and Z", use `plotContour`.
 - **Nonsense Inputs**: If non-technical terms are mixed with parameters (e.g., "SNR=5 pizza"), extract the numeric value. If it's nonsense (e.g., "SNR pizza"), ask for a proper numeric value.
 """
 
@@ -57,6 +58,10 @@ SHARED_FEW_SHOTS = [
     {"role": "assistant", "content": """I will find the optimal rho for a 2-PAM modulation with an SNR of 5.\nComputing computeOptimalRho with M=2, typeModulation='PAM', SNR=5, R='unknown', N='unknown'"""},
     {"role": "user", "content": "Plot error probability vs SNR for QPSK from 0 to 20 dB"},
     {"role": "assistant", "content": """I can do that. I will generate the plot parameters for error probability vs. SNR for QPSK.\nComputing plotFromFunction with y='error_probability', x='snr', min=0, max=20, points=50, typeModulation='QPSK', M=4, N='unknown', SNR='unknown', Rate='unknown'"""},
+    {"role": "user", "content": "Create a contour plot of error probability vs SNR and Rate for QPSK"},
+    {"role": "assistant", "content": """I'll generate a contour plot showing error probability as a function of SNR and Rate for QPSK.\nComputing plotContour with y='error_probability', x1='snr', x2='rate', min_x1=0, max_x1=20, min_x2=0.1, max_x2=0.9, points1=20, points2=20, typeModulation='QAM', M=4, N='unknown', SNR='unknown', Rate='unknown'"""},
+    {"role": "user", "content": "Show me a contour plot of error exponent vs M and SNR for PAM"},
+    {"role": "assistant", "content": """I'll create a contour plot displaying error exponent as a function of modulation order M and SNR for PAM.\nComputing plotContour with y='error_exponent', x1='m', x2='snr', min_x1=2, max_x1=16, min_x2=0, max_x2=15, points1=15, points2=20, typeModulation='PAM', M='unknown', N='unknown', SNR='unknown', Rate='unknown'"""},
     {"role": "user", "content": "What rate gives error probability 0.05 with BPSK at SNR=10?"},
     {"role": "assistant", "content": """I will search for the rate that meets your target of 0.05 for BPSK at an SNR of 10.\nSearching for rate to achieve target 0.05...\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=0.1, N='unknown'\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=0.3, N='unknown'\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=0.5, N='unknown'\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=0.7, N='unknown'\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=0.9, N='unknown'"""},
     {"role": "user", "content": "Compare BPSK and QPSK at SNR=8"},
@@ -115,11 +120,16 @@ def plotFromFunction(**params) -> str:
     """Generate plot data using call_exponents."""
     return f"Plot data generated for {params.get('typeModulation', 'PAM')} modulation"
 
+def plotContour(**params) -> str:
+    """Generate contour plot data using call_exponents."""
+    return f"Contour plot data generated for {params.get('typeModulation', 'PAM')} modulation"
+
 FUNCTION_REGISTRY = {
     'computeErrorProbability': computeErrorProbability,
     'computeErrorExponent': computeErrorExponent,
     'computeOptimalRho': computeOptimalRho,
-    'plotFromFunction': plotFromFunction
+    'plotFromFunction': plotFromFunction,
+    'plotContour': plotContour
 }
 
 # =============== LOCAL MODEL ===============
@@ -205,7 +215,8 @@ class TransmissionSystemAgent:
             'computeErrorProbability': r"Computing computeErrorProbability with (.+)",
             'computeErrorExponent': r"Computing computeErrorExponent with (.+)",
             'computeOptimalRho': r"Computing computeOptimalRho with (.+)",
-            'plotFromFunction': r"Computing plotFromFunction with (.+)"
+            'plotFromFunction': r"Computing plotFromFunction with (.+)",
+            'plotContour': r"Computing plotContour with (.+)"
         }
         
         for line in response.split('\n'):
@@ -274,15 +285,46 @@ class TransmissionSystemAgent:
         return conversational_text if conversational_text else None, function_calls
 
     def format_computation_result(self, function_name: str, result: Any, params: Dict[str, Any]) -> str:
-        """Asks the LLM to format a computation result into a user-friendly string."""
+        """Asks the LLM to format a computation result into a clear, plain text response focusing on the result and its system effects."""
         param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
         
-        prompt = f"""The user requested to compute '{function_name}' with parameters: {param_str}. The final result is: {result}.
+        # Create function-specific prompts for clear, practical responses
+        if function_name == 'computeErrorProbability':
+            prompt = f"""You are a transmission system expert. The error probability computation for {param_str} yielded result = {result:.6f}.
+
+Provide a clear, plain text response that answers two questions:
+1. What is the result? (State the error probability value and what it means)
+2. What effects does this value have on the transmission system? (Explain practical implications for system performance, reliability, and design)
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications. Keep the response to 2-3 sentences but make it technically accurate and useful for system design decisions."""
         
-        Please provide a concise, user-friendly explanation of this result in one or two sentences.
-        Reference the key parameters used in the calculation.
-        For example: 'The computed error exponent for 2-PAM at SNR=0.8 is 0.123.'
-        or 'For the given parameters, the optimal rho is 0.789.'"""
+        elif function_name == 'computeErrorExponent':
+            prompt = f"""You are a transmission system expert. The error exponent computation for {param_str} yielded result = {result:.6f}.
+
+Provide a clear, plain text response that answers two questions:
+1. What is the result? (State the error exponent value and what it represents)
+2. What effects does this value have on the transmission system? (Explain practical implications for coding performance, reliability, and achievable rates)
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications. Keep the response to 2-3 sentences but make it technically accurate and useful for system design decisions."""
+        
+        elif function_name == 'computeOptimalRho':
+            prompt = f"""You are a transmission system expert. The optimal rho computation for {param_str} yielded result = {result:.6f}.
+
+Provide a clear, plain text response that answers two questions:
+1. What is the result? (State the optimal rho value and what it represents)
+2. What effects does this value have on the transmission system? (Explain practical implications for error exponent optimization and system performance)
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications. Keep the response to 2-3 sentences but make it technically accurate and useful for system design decisions."""
+        
+        else:
+            # Generic prompt for other functions
+            prompt = f"""You are a transmission system expert. The computation '{function_name}' with parameters {param_str} yielded result = {result}.
+
+Provide a clear, plain text response that answers two questions:
+1. What is the result? (State the computed value and what it represents)
+2. What effects does this value have on the transmission system? (Explain practical implications for system performance and design)
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications. Keep the response to 2-3 sentences but make it technically accurate and useful for system design decisions."""
         
         formatted_response = "".join(self.generate_response_stream(prompt))
         return formatted_response
@@ -354,7 +396,8 @@ class OpenRouterAgent:
             'computeErrorProbability': r"Computing computeErrorProbability with (.+)",
             'computeErrorExponent': r"Computing computeErrorExponent with (.+)",
             'computeOptimalRho': r"Computing computeOptimalRho with (.+)",
-            'plotFromFunction': r"Computing plotFromFunction with (.+)"
+            'plotFromFunction': r"Computing plotFromFunction with (.+)",
+            'plotContour': r"Computing plotContour with (.+)"
         }
         for line in response.split('\n'):
             line = line.strip()
@@ -397,15 +440,46 @@ class OpenRouterAgent:
         return conversational_text if conversational_text else None, function_calls
 
     def format_computation_result(self, function_name: str, result: Any, params: Dict[str, Any]) -> str:
-        """Asks the LLM to format a computation result into a user-friendly string."""
+        """Asks the LLM to format a computation result into a clear, plain text response focusing on the result and its system effects."""
         param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+        
+        # Create function-specific prompts for clear, practical responses
+        if function_name == 'computeErrorProbability':
+            prompt = f"""You are a transmission system expert. The error probability computation for {param_str} yielded result = {result:.6f}.
 
-        prompt = f"""The user requested to compute '{function_name}' with parameters: {param_str}. The final result is: {result}.
+Provide a clear, plain text response that answers two questions:
+1. What is the result? (State the error probability value and what it means)
+2. What effects does this value have on the transmission system? (Explain practical implications for system performance, reliability, and design)
 
-        Please provide a concise, user-friendly explanation of this result in one or two sentences.
-        Reference the key parameters used in the calculation.
-        For example: 'The computed error exponent for 2-PAM at SNR=0.8 is 0.123.'
-        or 'For the given parameters, the optimal rho is 0.789.'"""
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications. Keep the response to 2-3 sentences but make it technically accurate and useful for system design decisions."""
+        
+        elif function_name == 'computeErrorExponent':
+            prompt = f"""You are a transmission system expert. The error exponent computation for {param_str} yielded result = {result:.6f}.
+
+Provide a clear, plain text response that answers two questions:
+1. What is the result? (State the error exponent value and what it represents)
+2. What effects does this value have on the transmission system? (Explain practical implications for coding performance, reliability, and achievable rates)
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications. Keep the response to 2-3 sentences but make it technically accurate and useful for system design decisions."""
+        
+        elif function_name == 'computeOptimalRho':
+            prompt = f"""You are a transmission system expert. The optimal rho computation for {param_str} yielded result = {result:.6f}.
+
+Provide a clear, plain text response that answers two questions:
+1. What is the result? (State the optimal rho value and what it represents)
+2. What effects does this value have on the transmission system? (Explain practical implications for error exponent optimization and system performance)
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications. Keep the response to 2-3 sentences but make it technically accurate and useful for system design decisions."""
+        
+        else:
+            # Generic prompt for other functions
+            prompt = f"""You are a transmission system expert. The computation '{function_name}' with parameters {param_str} yielded result = {result}.
+
+Provide a clear, plain text response that answers two questions:
+1. What is the result? (State the computed value and what it represents)
+2. What effects does this value have on the transmission system? (Explain practical implications for system performance and design)
+
+Use plain text only (no LaTeX or special formatting). Focus on practical engineering implications. Keep the response to 2-3 sentences but make it technically accurate and useful for system design decisions."""
         
         formatted_response = "".join(self.generate_response_stream(prompt))
         return formatted_response

@@ -4,7 +4,6 @@ window.addEventListener('DOMContentLoaded', () => {
     onLineTypeChange();
     drawDefaultGrid();
     plotInitialGraph();  // init primer graph
-    load_model();
     
     // Bind unified event handlers
     bindUnifiedEventHandlers();
@@ -266,6 +265,37 @@ function bindUnifiedEventHandlers() {
     const plotBtn = document.querySelector('button[type="button"][onclick*="plotFromFunction"]');
     if (plotBtn) {
         plotBtn.onclick = handleManualPlot;
+    }
+
+    // Bind Enter key for chat input - with retry mechanism
+    function attachChatInputHandler() {
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            // Remove any existing event listeners to avoid duplicates
+            chatInput.removeEventListener('keydown', handleChatInputKeydown);
+            chatInput.addEventListener('keydown', handleChatInputKeydown);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // Define the keydown handler function
+    function handleChatInputKeydown(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); // Prevent default form submission
+            sendMessage();
+        }
+    }
+
+    // Try to attach the handler immediately
+    if (!attachChatInputHandler()) {
+        // If not found, try again after a short delay
+        setTimeout(() => {
+            if (!attachChatInputHandler()) {
+                console.error('Failed to attach chat input handler after retry');
+            }
+        }, 100);
     }
 }
 
@@ -1951,9 +1981,7 @@ function plotInitialGraph() {
   fetch('/plot_function', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        message: message
-    }),
+    body: JSON.stringify(payload),
   })
     .then(res => {
       if (!res.ok) throw new Error("Error al cargar el gráfico inicial");

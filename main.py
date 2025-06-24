@@ -13,7 +13,7 @@ import logging
 import sys
 
 sys.path.append("assistant")
-from assistant.assistant import OpenRouterAgent, TransmissionSystemAgent, plotFromFunction
+from assistant.assistant import OpenRouterAgent, TransmissionSystemAgent, plotFromFunction, plotContour
 
 API_KEY = os.environ.get('API_KEY')  # Make sure this is set in your environment
 openrouter_agent = OpenRouterAgent(api_key=API_KEY)
@@ -74,11 +74,36 @@ async def computeOptimalRho(**params) -> float:
     result = await exponents(**query_params)
     return result["rho óptima"]
 
+async def plotContour(**params) -> dict:
+    """Generate contour plot data by calling the contour plot endpoint."""
+    # Convert parameters to contour plot endpoint format
+    contour_params = {
+        'y': params.get('y', 'error_probability'),
+        'x1': params.get('x1', 'snr'),
+        'x2': params.get('x2', 'rate'),
+        'rang_x1': params.get('rang_x1', [0, 20]),
+        'rang_x2': params.get('rang_x2', [0.1, 0.9]),
+        'points1': params.get('points1', 20),
+        'points2': params.get('points2', 20),
+        'typeModulation': params.get('typeModulation', 'PAM'),
+        'M': params.get('M', 2),
+        'SNR': params.get('SNR', 5.0),
+        'Rate': params.get('Rate', 0.5),
+        'N': params.get('N', 20),
+        'n': params.get('n', 128),
+        'th': params.get('th', 1e-6)
+    }
+    
+    # Call the contour plot endpoint
+    result = await generate_contour_plot(ContourPlotRequest(**contour_params))
+    return result
+
 FUNCTION_REGISTRY = {
     'computeErrorProbability': computeErrorProbability,
     'computeErrorExponent': computeErrorExponent,
     'computeOptimalRho': computeOptimalRho,
-    'plotFromFunction': plotFromFunction
+    'plotFromFunction': plotFromFunction,
+    'plotContour': plotContour
 }
 
 # Load the local model on startup
@@ -310,6 +335,16 @@ async def chatbot_with_bot(request: ChatbotRequest):
         intro_text, function_calls = agent_to_use.parse_function_calls(response_text)
         logging.info(f"Parsed intro: '{intro_text}', Parsed function calls: {function_calls}")
         
+        # Debug: Log the raw response to see what the LLM actually generated
+        logging.info(f"Raw LLM response lines: {[line.strip() for line in response_text.split('\\n') if line.strip()]}")
+        
+        # Add print statements for more visible debugging
+        print(f"=== DEBUG: Raw LLM response ===")
+        print(f"Response text: '{response_text}'")
+        print(f"Intro text: '{intro_text}'")
+        print(f"Function calls: {function_calls}")
+        print(f"=== END DEBUG ===")
+        
         # Update conversation history
         from assistant.assistant import ConversationEntry
         import time
@@ -423,9 +458,106 @@ async def chatbot_with_bot(request: ChatbotRequest):
                         "is_plot_request": True
                     }
                 }
+            elif task.function_name == 'plotContour':
+                # Convert plotContour parameters to contour plot endpoint format
+                plot_params = task.parameters
+                
+                # Extract plotting parameters with proper mapping
+                y_var = plot_params.get('y', 'error_probability')
+                x1_var = plot_params.get('x1', 'snr')
+                x2_var = plot_params.get('x2', 'rate')
+                min_x1 = plot_params.get('min_x1', 0)
+                max_x1 = plot_params.get('max_x1', 20)
+                min_x2 = plot_params.get('min_x2', 0.1)
+                max_x2 = plot_params.get('max_x2', 0.9)
+                points1 = plot_params.get('points1', 20)
+                points2 = plot_params.get('points2', 20)
+                
+                # Handle rang_x1 and rang_x2 if provided
+                rang_x1 = plot_params.get('rang_x1', [min_x1, max_x1])
+                rang_x2 = plot_params.get('rang_x2', [min_x2, max_x2])
+                
+                # Provide sensible defaults for unknown values
+                if rang_x1[0] == 'unknown' or rang_x1[1] == 'unknown':
+                    if x1_var.lower() == 'snr':
+                        rang_x1 = [0.0, 20.0]
+                    elif x1_var.lower() == 'rate':
+                        rang_x1 = [0.1, 0.9]
+                    elif x1_var.lower() == 'm':
+                        rang_x1 = [2.0, 16.0]
+                    else:
+                        rang_x1 = [0.0, 10.0]
+                
+                if rang_x2[0] == 'unknown' or rang_x2[1] == 'unknown':
+                    if x2_var.lower() == 'snr':
+                        rang_x2 = [0.0, 20.0]
+                    elif x2_var.lower() == 'rate':
+                        rang_x2 = [0.1, 0.9]
+                    elif x2_var.lower() == 'm':
+                        rang_x2 = [2.0, 16.0]
+                    else:
+                        rang_x2 = [0.0, 10.0]
+                
+                # Set default values for missing parameters
+                type_modulation = plot_params.get('typeModulation', 'PAM')
+                M = plot_params.get('M', 2)
+                SNR = plot_params.get('SNR', 5.0)
+                Rate = plot_params.get('Rate', plot_params.get('R', 0.5))
+                N = plot_params.get('N', 20)
+                n = plot_params.get('n', 128)
+                th = plot_params.get('th', 1e-6)
+                
+                # Create contour plot request payload
+                contour_payload = {
+                    "y": y_var,
+                    "x1": x1_var,
+                    "x2": x2_var,
+                    "rang_x1": rang_x1,
+                    "rang_x2": rang_x2,
+                    "points1": points1,
+                    "points2": points2,
+                    "typeModulation": type_modulation,
+                    "M": float(M),
+                    "SNR": float(SNR),
+                    "Rate": float(Rate),
+                    "N": float(N),
+                    "n": float(n),
+                    "th": float(th)
+                }
+                
+                initial_message = intro_text if intro_text else f"Generating contour plot for {y_var} vs {x1_var} and {x2_var}..."
+                
+                logging.info(f"Sending contour plot request: {contour_payload}")
+                return {
+                    "response": initial_message,
+                    "task": {
+                        "function_name": "plotContour",
+                        "parameters": contour_payload,
+                        "is_plot_request": True,
+                        "is_contour_plot": True
+                    }
+                }
             else:
                 # Regular computation tasks
-                initial_message = intro_text if intro_text else f"Understood. Starting the calculation for `{task.function_name}`. This may take a moment..."
+                # Use LLM-generated text if available, otherwise use a more natural fallback
+                print(f"=== DEBUG: Message selection ===")
+                print(f"Intro text: '{intro_text}'")
+                print(f"Intro text type: {type(intro_text)}")
+                print(f"Intro text is None: {intro_text is None}")
+                print(f"Intro text is empty: {intro_text == ''}")
+                print(f"Intro text is whitespace: {intro_text.strip() == '' if intro_text else 'N/A'}")
+                
+                if intro_text and intro_text.strip():
+                    initial_message = intro_text
+                    logging.info(f"Using LLM-generated conversational text: '{initial_message}'")
+                    print(f"Using LLM-generated text: '{initial_message}'")
+                else:
+                    # Only use hardcoded message if LLM didn't generate any conversational text
+                    initial_message = f"Understood. Starting the calculation for `{task.function_name}`. This may take a moment..."
+                    logging.info(f"Using fallback message because LLM generated no conversational text")
+                    print(f"Using fallback message: '{initial_message}'")
+                
+                print(f"=== END DEBUG ===")
                 
                 logging.info(f"Sending initial confirmation: '{initial_message}' and task: {task}")
                 return {

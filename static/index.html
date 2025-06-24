@@ -365,7 +365,7 @@
         <div class="chatbox">
           <div class="chat-messages" id="chat-messages"></div>
           <div class="chat-input-container">
-            <input type="text" id="chat-input" placeholder="Ask the assistant something..." />
+            <input type="text" id="chat-input" placeholder="Ask the assistant something..." onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }" />
             <button type="button" class="send-button" onclick="sendMessage()">Send</button>
           </div>
         </div>
