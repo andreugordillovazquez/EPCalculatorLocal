@@ -1,0 +1,1183 @@
+/* ======== COLOURS ======== */
+body {
+  background: #FFF !important;
+  color: #222 !important;
+  font-family: 'Inter', Arial, sans-serif;
+  min-height: 100vh;
+  height: 100vh; /* FIXED: Added this */
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ======== HEADER CENTERED ======== */
+.center-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 10px 0 5px 0;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+#titulo {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #222;
+  margin: 0 0 3px 0;
+  text-align: center;
+  letter-spacing: -0.03em;
+}
+
+#subtitulo {
+  font-size: 0.95rem;
+  color: #222;
+  font-weight: 400;
+  margin: 0 0 6px 0;
+  text-align: center;
+  letter-spacing: 0;
+}
+
+#subtitulo2 a {
+  color: #222;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+/* ======== FULL WIDTH LAYOUT ======== */
+.main-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch; /* FIXED: Changed from flex-start to stretch */
+  gap: 40px;
+  max-width: 1920px;
+  width: 100%;
+  margin: 0 auto;
+  justify-content: center;
+  background: transparent;
+  flex: 1;
+  padding: 15px 15px 60px 15px; /* FIXED: Added bottom padding to account for fixed footer */
+  min-height: 0;
+  box-sizing: border-box;
+  /* FIXED: Removed height: 100vh */
+  position: relative; /* Added for toggle button positioning */
+}
+
+/* ======== SIDEBAR TOGGLE BUTTONS ======== */
+.sidebar-toggle {
+  position: absolute;
+  top: 20px;
+  background: #DCDCDC;
+  color: #666;
+  border: none;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  z-index: 1000;
+  font-size: 10px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.sidebar-toggle:hover {
+  background: #BDBDBD;
+  color: #444;
+}
+
+.left-toggle {
+  right: 10px; /* Position inside the left sidebar */
+}
+
+.right-toggle {
+  left: 10px; /* Position inside the right sidebar */
+}
+
+.toggle-icon {
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* ======== SIDEBAR COLLAPSED STATES ======== */
+.parameters-area.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  margin-right: -40px; /* Prevent layout shift */
+}
+
+.chatbot-sidebar.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  margin-left: -40px; /* Prevent layout shift */
+}
+
+/* Show toggle buttons when sidebars are collapsed */
+.main-layout::before {
+  content: "▶";
+  position: absolute;
+  top: 20px;
+  left: 15px;
+  background: #DCDCDC;
+  color: #666;
+  border: none;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  z-index: 1000;
+  font-size: 10px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  line-height: 20px;
+  text-align: center;
+}
+
+.main-layout::after {
+  content: "◀";
+  position: absolute;
+  top: 20px;
+  right: 15px;
+  background: #DCDCDC;
+  color: #666;
+  border: none;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  z-index: 1000;
+  font-size: 10px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  line-height: 20px;
+  text-align: center;
+}
+
+.parameters-area.collapsed ~ .main-layout::before {
+  display: flex;
+}
+
+.chatbot-sidebar.collapsed ~ .main-layout::after {
+  display: flex;
+}
+
+/* ======== SECTION CONTAINERS ======== */
+.parameters-area,
+.plot-area,
+.chatbot-area {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  transition: all 0.35s ease; /* MOD */
+}
+
+
+/* ======== SECTION TITLES ======== */
+.section-title {
+  font-size: 1.15em;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: #222;
+  letter-spacing: -0.01em;
+  text-align: left;
+  margin-top: 0;
+}
+
+/* ======== INPUT FORMS, SINGLE COLUMN ======== */
+.parameters-area form {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.input-group label {
+  font-size: 0.9em;
+  font-weight: 500;
+  color: #222;
+  margin-bottom: 0;
+  white-space: nowrap;
+  min-width: 110px;
+  max-width: 110px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.input-group .tooltip {
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.input-group input[type="text"],
+.input-group input[type="number"],
+.input-group select,
+.input-group textarea,
+.input-group input[list] {
+  font-family: inherit;
+  background: #FFF;
+  border: 1px solid #DCDCDC;
+  font-size: 0.9em;
+  padding: 8px 11px;
+  transition: border 0.14s;
+  outline: none;
+  color: #222;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+  appearance: none;
+  border-radius: 0;
+}
+
+.input-group textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+/* ======== UNIFIED INPUT STYLES ======== */
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus,
+input[list]:focus {
+  border: 1.5px solid #222;
+  background: #FFF;
+}
+
+input[type="text"]::placeholder,
+input[type="number"]::placeholder,
+textarea::placeholder,
+input[list]::placeholder {
+  color: #bcbcbc;
+  font-weight: 400;
+  opacity: 1;
+}
+
+/* Adjust textarea to be wider */
+.input-group textarea {
+  max-width: 300px;
+  min-height: 60px;
+}
+
+/* ======== CUSTOM SELECT ======== */
+select.custom-select,
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: #FFF url("data:image/svg+xml,%3Csvg width='12' height='7' viewBox='0 0 12 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 13px center/16px 8px;
+  padding-right: 36px;
+  border: 1px solid #DCDCDC;
+  color: #222;
+  font-size: 1em;
+  border-radius: 0; /* remove rounded corners */
+}
+
+select.custom-select:focus,
+select:focus {
+  border: 1.5px solid #222;
+}
+
+
+
+/* ======== TOOLTIP STYLES ======== */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  margin-left: 4px;
+  color: #222;
+  font-size: 0.9em;
+  cursor: pointer;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+/* The hidden tooltip text */
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 180px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #FFF;
+  text-align: left;
+  border-radius: 4px;
+  padding: 6px 8px;
+  position: absolute;
+  z-index: 100;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  font-size: 0.8em;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+/* Small arrow at the bottom of the tooltip */
+.tooltip .tooltip-text::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+}
+
+/* Show the tooltip text when hovering over the ℹ️ */
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* ======== BUTTONS ======== */
+button,
+.send-button {
+  background: #222;
+  color: #FFF;
+  border: none;
+  padding: 10px 22px;
+  font-weight: 500;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background 0.14s, transform 0.12s;
+  box-shadow: none;
+  letter-spacing: 0;
+  margin-top: 6px;
+  border-radius: 0;
+}
+
+button:hover,
+.send-button:hover {
+  background: #222;
+  transition: background 0.14s, transform 0.12s;
+  opacity: 0.8;
+}
+
+/* ======== PLOT AND CHATBOT AREAS ======== */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.plot-area,
+.chatbot-area {
+  width: 100%;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.plot-area {
+  flex: 1;
+  min-height: 300px;
+}
+
+.chatbot-area {
+  /* FIXED: Use same natural flow as parameters area */
+  width: 100%;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  /* FIXED: Remove all flex properties */
+}
+
+/* ======== INPUT ROWS FOR PLOT SECTION ======== */
+.input-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.input-row .input-group {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* ======== BUTTON GROUPS ======== */
+.button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.manual-button-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+@media (max-width: 1100px) {
+  .main-layout {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 32px;
+    width: 98vw;
+  }
+  .parameters-area,
+  .plot-area,
+  .chatbot-area {
+    min-width: 0;
+    max-width: 98vw;
+    width: 100%;
+  }
+  .input-row {
+    flex-direction: column;
+  }
+
+  #plot-output {
+    min-width: 300px;
+    max-width: 100%;
+  }
+
+  /* Hide toggle buttons on mobile */
+  .sidebar-toggle {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  #plot-output {
+    min-width: 280px;
+    max-height: 400px;
+  }
+}
+
+.result,
+.result.show {
+  background: transparent !important;
+  color: #222 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  text-align: left !important;
+  font-size: 1em !important;
+  margin-top: 10px;
+}
+
+/* ======== CHATBOT STYLING FIXES ======== */
+.chat-messages {
+  background: #FFF !important;
+  border: 1px solid #DCDCDC !important;
+  border-radius: 0 !important;
+  padding: 10px !important;
+  padding-bottom: 20px !important; /* Extra padding at bottom for better scrolling */
+  font-size: 1em !important; /*MOD --> + gran*/
+  color: #222 !important;
+  overflow-y: auto;
+  font-family: inherit;
+  height: 750px; /*MOD --> Altura xatbot, chatbot */
+  /* Use simple block layout for reliable scrolling */
+  display: block;
+}
+
+/* Clearfix for floating chat bubbles */
+.chat-messages::after {
+  content: '';
+  display: table;
+  clear: both;
+}
+
+.chat-message {
+  margin-bottom: 8px;
+  padding: 6px 0;
+  line-height: 1.4;
+}
+
+.chat-message.system {
+  color: #666;
+  font-style: italic;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.chat-message.user {
+  color: #222;
+  font-weight: 500;
+}
+
+.chat-message.assistant {
+  color: #444;
+}
+
+/* Chat bubbles */
+/* MOD: Updated chat bubble styles for better readability */	  
+.chat-bubble {
+  max-width: 90%;
+  padding: 8px 12px;
+  margin: 8px 0;
+  border-radius: 0px;
+  display: block;
+  font-size: 1em;
+  word-wrap: break-word;
+  clear: both;
+}
+
+.chat-bubble.user {
+  background-color: #e6f2ff;
+  float: right;
+  text-align: right;
+}
+
+.chat-bubble.bot {
+  background-color: #f0f0f0;
+  float: left;
+  text-align: left;
+}
+
+.chat-bubble.error {
+  background-color: #ffe6e6;
+  color: #b00020;
+  float: left;
+  text-align: left;
+}
+
+/* chat input style */
+.chat-input-container {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+#chat-input {
+  font-family: inherit;
+  background: #FFF;
+  border: 1px solid #DCDCDC;
+  border-radius: 0;
+  font-size: 0.9em;
+  padding: 8px 11px;
+  transition: border 0.14s;
+  outline: none;
+  color: #222;
+  flex: 1;
+  box-sizing: border-box;
+  appearance: none;
+}
+
+#chat-input:focus {
+  border: 1.5px solid #222;
+  background: #FFF;
+}
+
+#chat-input::placeholder {
+  color: #bcbcbc;
+  font-weight: 400;
+  opacity: 1;
+}
+
+.send-button {
+  background: #222;
+  color: #FFF;
+  border: none;
+  padding: 8px 16px;
+  font-weight: 500;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background 0.14s, transform 0.12s;
+  box-shadow: none;
+  letter-spacing: 0;
+  margin-top: 0;
+  border-radius: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.send-button:hover {
+  background: #222;
+  opacity: 0.8;
+}
+
+.chatbox {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ======== PLOT OUTPUT AREA ======== */
+/*MOD*/
+#plot-output {
+  margin-top: 0px;
+  height: 819px; /* La mateixa altura que la secció del xatbot */
+  width: calc(100% - 7px); /* He afegit una mica de marge pel contenidor del chat*/
+  border: 1px solid #DCDCDC;
+  border-radius: 0px;
+  background: #FFF;
+  overflow: hidden;
+  position: relative;   /* Fora  FLEX */
+
+}
+
+
+/* Make the actual D3/SVG plot responsive */
+#plot-output svg {
+  max-width: 100%;
+  max-height: 100%;
+  /* MOD --> Es fa directament al js */
+  display: block;
+}
+
+#manual-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #DCDCDC;
+}
+
+#manual-section h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #222;
+}
+
+footer {
+  background: #FFF;
+  color: #222;
+  text-align: center;
+  padding: 5px 0 5px 0;
+  font-size: 0.8em;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1000;
+  border-top: 1px solid #DCDCDC;
+  box-sizing: border-box;
+}
+
+/* ─────────── Override form width on mobile ─────────── */
+@media (max-width: 1100px) {
+  /* Make the parameters-area form fill 100% on small screens */
+  .parameters-area form {
+    max-width: none;    /* remove the 280px cap */
+    width: 100%;        /* let it expand to fill its container */
+    padding: 0px;    /* optional horizontal padding inside the container */
+    box-sizing: border-box;
+  }
+
+  /* If you want the form's input-groups to also stretch fully: */
+  .parameters-area .input-group-block,
+  .parameters-area .input-group {
+    width: 100%;
+  }
+}
+
+/* Add some spacing between sections */
+.input-group-block h3 {
+  margin-top: 20px;
+  margin-bottom: 15px;
+}
+
+@media (max-width: 700px) {
+  .input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .input-group label {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    margin-bottom: 2px;
+    display: block;
+    text-align: left;
+  }
+  .input-group input[type="text"],
+  .input-group input[type="number"],
+  .input-group select,
+  .input-group textarea,
+  .input-group input[list] {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+.parameters-area {
+  width: 350px;
+  min-width: 260px;
+  max-width: 380px;
+  background: #FFF;
+  padding: 0;
+  box-sizing: border-box;
+  transition: width 0.3s ease, margin 0.3s ease; /* Faster, smoother transition */
+  position: relative; /* For toggle button positioning */
+}
+
+.chatbot-sidebar {
+  width: 340px;
+  min-width: 260px;
+  max-width: 380px;
+  background: #FFF;
+  padding: 0 0 0 10px;
+  box-sizing: border-box;
+  transition: width 0.3s ease, margin 0.3s ease; /* Faster, smoother transition */
+  position: relative; /* For toggle button positioning */
+  /* FIXED: Remove flex completely - use natural content flow like parameters */
+}
+
+/* ======== EXPANDING SIDEBARS Animació - tmb afegit al js ======== */
+.parameters-area.expanding,
+.chatbot-sidebar.expanding {
+  width: 0 !important;
+  margin-right: -40px;
+  overflow: hidden;
+}
+
+/* ======== Flechita assistant para fuera ======== */
+.external-right-toggle {
+  right: 30px !important;
+}
+
+
+.plot-area {
+  flex: 1 1 0%;
+  min-width: 0;
+  max-width: 100%;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;    
+  min-height: 719px;
+}
+
+/* MOD: Per a que el Plot tingui una mica de marge */
+.left-collapsed .plot-area .section-title {
+  padding-left: 80px;
+} 
+
+
+@media (max-width: 1100px) {
+  .main-layout {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 32px;
+    width: 98vw;
+  }
+  .parameters-area,
+  .plot-area,
+  .chatbot-sidebar {
+    min-width: 0;
+    max-width: 98vw;
+    width: 100%;
+    padding: 0;
+  }
+}
+
+.parameters-area .button-group {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.parameters-area .button-group button,
+.parameters-area .button-group .compute-error {
+  flex: 1 1 0;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0;
+  padding: 10px 8px;
+  white-space: nowrap;
+  font-size: 0.95em;
+}
+
+@media (max-width: 700px) {
+  .parameters-area .button-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+/* ======== CHATBOT FULL HEIGHT FIX ======== */
+/* FIXED: Use natural content flow exactly like parameters area */
+.chatbox {
+  /* FIXED: Remove all flex properties - natural content flow */
+  width: 100%;
+}
+
+/* FIXED: Updated all chatbot button styling */
+.chatbot-area .button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  width: 100%;
+  /* FIXED: Remove flex-shrink and min-height - use natural sizing */
+}
+
+/* Make Clear Chat button fill full width */
+.chatbot-area .button-group button {
+  flex: 1; /* FIXED: Fill available space */
+  width: 100%;
+  background: #222;
+  color: #FFF;
+  border: none;
+  padding: 10px 22px;
+  font-weight: 500;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background 0.14s, transform 0.12s;
+  box-shadow: none;
+  letter-spacing: 0;
+  margin-top: 0;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+.chatbot-area .button-group button:hover {
+  background: #222;
+  opacity: 0.8;
+}
+
+/* ======== ADVANCED PARAM ======== */
+/* MOD */
+.advanced-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95em;
+  margin-top: 10px;
+  margin-bottom: 5px;
+  user-select: none;
+  gap: 8px;
+}
+
+.arrow-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.advanced-toggle.open .arrow-icon {
+  transform: rotate(90deg); /* ▶→▼ */
+}
+
+.advanced-section {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.3s ease;
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.advanced-section.show {
+  max-height: 200px;
+  opacity: 1;
+}
+
+/* ======== ADDITIONAL PARAM ======== */
+.additional-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95em;
+  margin-top: 10px;
+  margin-bottom: 5px;
+  user-select: none;
+  gap: 8px;
+}
+
+.additional-toggle .arrow-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.additional-toggle.open .arrow-icon {
+  transform: rotate(90deg); /* ▶→▼ */
+}
+
+.additional-section {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.3s ease;
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.additional-section.show {
+  max-height: 200px;
+  opacity: 1;
+}
+
+/* ======== BOTONS PLOT AREA ======== */
+#plot-controls-wrapper {
+  margin-top: 12px;
+  margin-bottom: 50px;  /* MOD: marge inferior */
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+
+#plot-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+#plot-controls button {
+  padding: 8px 14px;
+  font-size: 0.9em;
+}
+
+#plot-controls label {
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ======== WARNING ======== */
+/* MOD */
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background-color: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px 25px;
+  border: 1px solid #aaa;
+  border-radius: 0px;
+  max-width: 400px;
+  width: 90%;
+  font-size: 1em;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  font-size: 0.9em;
+  border: none;
+  background: #222;
+  color: white;
+  cursor: pointer;
+}
+
+.modal-buttons button:hover {
+  opacity: 0.85;
+}
+
+/* PREMER BOTÓ */
+button.clicked,
+.send-button.clicked {
+  transform: scale(0.95);
+  opacity: 0.7;
+  transition: transform 0.03s ease, opacity 0.03s ease;
+}
+
+/* ======== ACTIVE PLOTS ======== */
+/* MOD --> Aixo només esta definit aquí ara */
+#plot-list {
+  position: absolute;
+  top: 80px;    
+  right: 60px;
+  background: rgba(255, 255, 255, 0);
+  border: 1px solid #ccc;
+  padding: 10px 0px 10px 10px;
+  border-radius: 0px;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
+  min-width: 240px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 0.85em;
+  cursor: move;
+  z-index: 999;
+}
+/* MOD --> Evita estiraments raros del activplots */
+#plot-list {
+  width: 300px;       
+  height: auto;
+  max-height: 300px;  
+  resize: none;  
+}
+
+
+/* POSICIÓ FLECHA SIDEBAR */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-header.right-align {
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.sidebar-header .section-title {
+  margin: 0;
+  font-size: 1.15em;
+  font-weight: 700;
+  color: #222;
+}
+
+.sidebar-header .sidebar-toggle {
+  position: static;
+  margin: 0;
+  box-shadow: none;
+}
+
+.sidebar-header.split-align {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.sidebar-header.split-align .spacer {
+  flex: 1;
+}
+
+.sidebar-header.split-align .sidebar-toggle {
+  order: 1;
+}
+
+.sidebar-header.split-align .section-title {
+  order: 3;
+}
+
+.sidebar-header.align-ends {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.sidebar-header.align-ends .sidebar-toggle {
+  order: 1;
+}
+
+.sidebar-header.align-ends .section-title {
+  order: 2;
+  margin-left: auto;
+}
+
+/* ======== LOGO UPF ======== */
+.logo-upf {
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  height: 70px;
+  z-index: 10;
+}
+
+.title-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* ======== SCALE TOGGLE BUTTONS ======== */
+
+.scale-toggle-group {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 0 0;
+  padding-left: 0px;
+}
+
+
+.scale-btn {
+  background: white;
+  color: #222;
+  border: 1px solid #DCDCDC;
+  border-radius: 0;
+  padding: 6px 14px;
+  font-weight: 500;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+
+.scale-btn:hover {
+  background: #f5f5f5;
+}
+
+.scale-btn.selected {
+  background: #f0f0f0;
+  border-color: #C0C0C0;
+}
+
+#contourScaleButton .scale-btn {
+  cursor: default;
+  pointer-events: none;
+}
+
+
+
+
+
+
+
