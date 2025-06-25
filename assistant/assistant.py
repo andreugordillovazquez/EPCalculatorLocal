@@ -212,7 +212,7 @@ class TransmissionSystemAgent:
         generation_kwargs = {
             **inputs,
             "max_new_tokens": 200,
-            "temperature": 0.3,
+            "temperature": 0.1,
             "top_p": 0.9,              
             "do_sample": True,
             "repetition_penalty": 1.05,
@@ -585,7 +585,7 @@ class OpenRouterAgent:
             "model": self.model,
             "messages": messages,
             "stream": True,
-            "temperature": 0.3,
+            "temperature": 0.1,
             "top_p": 0.9
         }
         with requests.post(url, headers=headers, json=payload, stream=True) as resp:

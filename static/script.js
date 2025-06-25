@@ -263,8 +263,57 @@ function runPlot(parameters, isContour = false) {
  */
 function handleManualComputation(event) {
     event.preventDefault();
-    const parameters = gatherComputationParameters();
-    runComputation('computeErrorProbability', parameters);
+    
+    // Get parameters from the form
+    const M_val = document.getElementById('M').value;
+    const typeM_val = document.getElementById('TypeModulation').value;
+    const SNR_val = document.getElementById('SNR').value;
+    const R_val = document.getElementById('R').value;
+    const N_val = document.getElementById('N').value;
+    const n_val = document.getElementById('n').value;
+    const th_val = document.getElementById('th').value;
+    const resultDiv = document.getElementById('result');
+
+    const sanitize = (value, defaultValue) => {
+        if (value === '' || value === null || value === undefined || String(value).toLowerCase() === 'undefined' || String(value).toLowerCase() === 'unknown' || String(value).toLowerCase() === 'none') {
+            return defaultValue;
+        }
+        return value;
+    };
+
+    const M = sanitize(M_val, 2);
+    const typeM = sanitize(typeM_val, 'PAM');
+    const SNR = sanitize(SNR_val, 5.0);
+    const R = sanitize(R_val, 0.5);
+    const N = sanitize(N_val, 20);
+    const n = sanitize(n_val, 128);
+    const th = sanitize(th_val, 1e-6);
+
+    // Clear previous results
+    resultDiv.innerHTML = "";
+    resultDiv.classList.remove('show');
+
+    // Call /exponents directly (same as calculateExponents function)
+    fetch(`/exponents?M=${M}&typeM=${typeM}&SNR=${SNR}&R=${R}&N=${N}&n=${n}&th=${th}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Server response not OK");
+            }
+            return response.json();
+        })
+        .then(data => {
+            resultDiv.innerHTML = `
+                <p><strong>Probability error:</strong> ${data["Probabilidad de error"].toFixed(4)}</p>
+                <p><strong>Exponents:</strong> ${data["error_exponent"].toFixed(4)}</p>
+                <p><strong>Optimal rho:</strong> ${data["rho óptima"].toFixed(4)}</p>
+            `;
+            resultDiv.classList.add('show');
+        })
+        .catch(error => {
+            console.error("Error fetching exponents:", error);
+            resultDiv.innerHTML = `<p style="color: #000; font-weight: bold;">Unable to process the data. Please verify your inputs.</p>`;
+            resultDiv.classList.add('show');
+        });
 }
 
 /**

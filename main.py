@@ -822,9 +822,9 @@ async def compute_task(request: ComputeRequest):
                 elif func_name == 'computeOptimalRho':
                     requested_result = all_metrics["optimal_rho"]
                 
-                # Use the local agent to format the result with all three metrics for context
-                logging.info("Formatting result with LLM using all metrics for context...")
-                formatted_result = local_agent.format_computation_result_with_context(func_name, requested_result, all_metrics, params)
+                # Use the local agent to format the result focusing only on the requested metric
+                logging.info("Formatting result with LLM focusing on requested metric...")
+                formatted_result = local_agent.format_computation_result(func_name, requested_result, params)
                 logging.info(f"Formatted result for {func_name}: '{formatted_result}'")
         else:
             # For non-computation functions (like plots), use the original approach
