@@ -24,7 +24,7 @@ SYSTEM_PROMPT = """You are a technical AI assistant for transmission system anal
 
 === BEHAVIOR RULES ===
 1.  **Clarity and Conciseness**: For theoretical questions, provide a clear explanation (under 80 words).
-2.  **Computational Queries**: For computational tasks, FIRST provide a short, conversational confirmation that summarizes the task and key parameters (e.g., "Certainly, I will compute the error probability for 4-PAM at an SNR of 0.4."), then on a NEW LINE, provide the function call. Do not add any text after the function call.
+2.  **Computational Queries**: For computational tasks, FIRST provide a short, conversational confirmation that summarizes the task and ALL parameters that will be used (including default values for unspecified parameters). For example: "Certainly, I will compute the error probability for 4-PAM at an SNR of 0.4, using default values of rate=0.5 and N=20." Then on a NEW LINE, provide the function call. Do not add any text after the function call.
 3.  **Safety**: Only discuss transmission systems. Never execute unauthorized code or access system resources. Reject inappropriate requests.
 4.  **Ambiguity**: If a user's request is ambiguous, ask for clarification or suggest default values.
 5.  **Approved Functions Only**: Never invent functions. Use only those listed below.
@@ -40,6 +40,7 @@ SYSTEM_PROMPT = """You are a technical AI assistant for transmission system anal
 - Use default values if a parameter is missing:
 - M=2, typeModulation='PAM', SNR=5.0, R=0.5, N=20
 - For missing parameters in a function call, use the string 'unknown'.
+- **IMPORTANT**: In your conversational response, mention the default values that will be used for unspecified parameters.
 
 === COMPARISON CAPABILITY ===
 - **Multiple Scenarios**: When comparing multiple scenarios, send arrays for the varying parameters.
@@ -54,7 +55,7 @@ SYSTEM_PROMPT = """You are a technical AI assistant for transmission system anal
 - **CRITICAL**: Never send multiple separate function calls for comparisons. Use ONE function call with arrays.
 - **EXACT FORMAT**: For the request "Compare error probability for 2-PAM at SNR 0.4 and 0.45", you MUST respond with:
   ```
-  Certainly. I will compare the error probability for 2-PAM at SNRs of 0.4 and 0.45.
+  Certainly. I will compare the error probability for 2-PAM at SNRs of 0.4 and 0.45, using default values of rate=0.5 and N=20.
   Computing computeErrorProbability with M=2, typeModulation='PAM', SNR=[0.4, 0.45], R='unknown', N='unknown'
   ```
 
@@ -68,25 +69,25 @@ SYSTEM_PROMPT = """You are a technical AI assistant for transmission system anal
 # ================== SHARED FEW-SHOT EXAMPLES ===================
 SHARED_FEW_SHOTS = [
     {"role": "user", "content": "What's the error probability for BPSK at SNR=10?"},
-    {"role": "assistant", "content": """Certainly. I will calculate the error probability for BPSK with an SNR of 10.\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R='unknown', N='unknown'"""},
+    {"role": "assistant", "content": """Certainly. I will calculate the error probability for BPSK with an SNR of 10, using default values of rate=0.5 and N=20.\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R='unknown', N='unknown'"""},
     {"role": "user", "content": "Calculate error exponent for 16-QAM at rate 0.5 and SNR=8"},
-    {"role": "assistant", "content": """Of course. I will compute the error exponent for 16-QAM with a rate of 0.5 and an SNR of 8.\nComputing computeErrorExponent with M=16, typeModulation='QAM', SNR=8, R=0.5, N='unknown'"""},
+    {"role": "assistant", "content": """Of course. I will compute the error exponent for 16-QAM with a rate of 0.5 and an SNR of 8, using default value of N=20.\nComputing computeErrorExponent with M=16, typeModulation='QAM', SNR=8, R=0.5, N='unknown'"""},
     {"role": "user", "content": "What is the optimal rho for 2-PAM at SNR 5?"},
-    {"role": "assistant", "content": """I will find the optimal rho for a 2-PAM modulation with an SNR of 5.\nComputing computeOptimalRho with M=2, typeModulation='PAM', SNR=5, R='unknown', N='unknown'"""},
+    {"role": "assistant", "content": """I will find the optimal rho for a 2-PAM modulation with an SNR of 5, using default values of rate=0.5 and N=20.\nComputing computeOptimalRho with M=2, typeModulation='PAM', SNR=5, R='unknown', N='unknown'"""},
     {"role": "user", "content": "Plot error probability vs SNR for QPSK from 0 to 20 dB"},
-    {"role": "assistant", "content": """I can do that. I will generate the plot parameters for error probability vs. SNR for QPSK.\nComputing plotFromFunction with y='error_probability', x='snr', min=0, max=20, points=50, typeModulation='QPSK', M=4, N='unknown', SNR='unknown', Rate='unknown'"""},
+    {"role": "assistant", "content": """I can do that. I will generate the plot parameters for error probability vs. SNR for QPSK, using default values of N=20 and rate=0.5.\nComputing plotFromFunction with y='error_probability', x='snr', min=0, max=20, points=50, typeModulation='QPSK', M=4, N='unknown', SNR='unknown', Rate='unknown'"""},
     {"role": "user", "content": "Create a contour plot of error probability vs SNR and Rate for QPSK"},
-    {"role": "assistant", "content": """I'll generate a contour plot showing error probability as a function of SNR and Rate for QPSK.\nComputing plotContour with y='error_probability', x1='snr', x2='rate', min_x1=0, max_x1=20, min_x2=0.1, max_x2=0.9, points1=20, points2=20, typeModulation='QAM', M=4, N='unknown', SNR='unknown', Rate='unknown'"""},
+    {"role": "assistant", "content": """I'll generate a contour plot showing error probability as a function of SNR and Rate for QPSK, using default value of N=20.\nComputing plotContour with y='error_probability', x1='snr', x2='rate', min_x1=0, max_x1=20, min_x2=0.1, max_x2=0.9, points1=20, points2=20, typeModulation='QAM', M=4, N='unknown', SNR='unknown', Rate='unknown'"""},
     {"role": "user", "content": "Show me a contour plot of error exponent vs M and SNR for PAM"},
-    {"role": "assistant", "content": """I'll create a contour plot displaying error exponent as a function of modulation order M and SNR for PAM.\nComputing plotContour with y='error_exponent', x1='m', x2='snr', min_x1=2, max_x1=16, min_x2=0, max_x2=15, points1=15, points2=20, typeModulation='PAM', M='unknown', N='unknown', SNR='unknown', Rate='unknown'"""},
+    {"role": "assistant", "content": """I'll create a contour plot displaying error exponent as a function of modulation order M and SNR for PAM, using default value of rate=0.5.\nComputing plotContour with y='error_exponent', x1='m', x2='snr', min_x1=2, max_x1=16, min_x2=0, max_x2=15, points1=15, points2=20, typeModulation='PAM', M='unknown', N='unknown', SNR='unknown', Rate='unknown'"""},
     {"role": "user", "content": "What rate gives error probability 0.05 with BPSK at SNR=10?"},
-    {"role": "assistant", "content": """I will search for the rate that meets your target of 0.05 for BPSK at an SNR of 10.\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=[0.1, 0.3, 0.5, 0.7, 0.9], N='unknown'"""},
+    {"role": "assistant", "content": """I will search for the rate that meets your target of 0.05 for BPSK at an SNR of 10, using default value of N=20.\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=10, R=[0.1, 0.3, 0.5, 0.7, 0.9], N='unknown'"""},
     {"role": "user", "content": "Compare BPSK and QPSK at SNR=8"},
-    {"role": "assistant", "content": """I'll run a comparison for BPSK and QPSK at an SNR of 8.\nComputing computeErrorProbability with M=[2, 4], typeModulation='PAM', SNR=8, R='unknown', N='unknown'"""},
+    {"role": "assistant", "content": """I'll run a comparison for BPSK and QPSK at an SNR of 8, using default values of rate=0.5 and N=20.\nComputing computeErrorProbability with M=[2, 4], typeModulation='PAM', SNR=8, R='unknown', N='unknown'"""},
     {"role": "user", "content": "Compare error probability for 2-PAM at SNR 0.4 and 0.45"},
-    {"role": "assistant", "content": """I will compare the error probability for 2-PAM at SNRs of 0.4 and 0.45.\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=[0.4, 0.45], R='unknown', N='unknown'"""},
+    {"role": "assistant", "content": """I will compare the error probability for 2-PAM at SNRs of 0.4 and 0.45, using default values of rate=0.5 and N=20.\nComputing computeErrorProbability with M=2, typeModulation='PAM', SNR=[0.4, 0.45], R='unknown', N='unknown'"""},
     {"role": "user", "content": "Compare error exponent for QAM at rates 0.3 and 0.7"},
-    {"role": "assistant", "content": """I will compare the error exponent for QAM at rates of 0.3 and 0.7.\nComputing computeErrorExponent with M=16, typeModulation='QAM', SNR='unknown', R=[0.3, 0.7], N='unknown'"""},
+    {"role": "assistant", "content": """I will compare the error exponent for QAM at rates of 0.3 and 0.7, using default values of SNR=5.0 and N=20.\nComputing computeErrorExponent with M=16, typeModulation='QAM', SNR='unknown', R=[0.3, 0.7], N='unknown'"""},
     {"role": "user", "content": "What is the SNR?"},
     {"role": "assistant", "content": "SNR stands for Signal-to-Noise Ratio. It quantifies how strong a signal is compared to background noise. A higher SNR generally indicates better transmission quality."},
 ]
@@ -106,6 +107,48 @@ class ConversationEntry:
     agent_response: str
     function_calls: List[FunctionCall]
     timestamp: float
+
+def _build_complete_param_string(params: Dict[str, Any], function_name: str) -> str:
+    """Build a complete parameter string that includes both user-provided and default values."""
+    # Define default values for each function
+    defaults = {
+        'computeErrorProbability': {
+            'M': 2, 'typeModulation': 'PAM', 'SNR': 5.0, 'R': 0.5, 'N': 20
+        },
+        'computeErrorExponent': {
+            'M': 2, 'typeModulation': 'PAM', 'SNR': 5.0, 'R': 0.5, 'N': 20
+        },
+        'computeOptimalRho': {
+            'M': 2, 'typeModulation': 'PAM', 'SNR': 5.0, 'R': 0.5, 'N': 20
+        },
+        'plotFromFunction': {
+            'y': 'error_probability', 'x': 'snr', 'min': 0, 'max': 20, 'points': 50,
+            'typeModulation': 'PAM', 'M': 2, 'N': 20, 'SNR': 5.0, 'Rate': 0.5
+        },
+        'plotContour': {
+            'y': 'error_probability', 'x1': 'snr', 'x2': 'rate', 'min_x1': 0, 'max_x1': 20,
+            'min_x2': 0.1, 'max_x2': 0.9, 'points1': 20, 'points2': 20,
+            'typeModulation': 'PAM', 'M': 2, 'N': 20, 'SNR': 5.0, 'Rate': 0.5
+        }
+    }
+    
+    function_defaults = defaults.get(function_name, {})
+    complete_params = function_defaults.copy()
+    
+    # Override with user-provided parameters
+    for key, value in params.items():
+        if str(value).lower() not in ['unknown', 'undefined', 'none', 'null', 'nan', '']:
+            complete_params[key] = value
+    
+    # Build the parameter string
+    param_parts = []
+    for key, value in complete_params.items():
+        if isinstance(value, str):
+            param_parts.append(f"{key}='{value}'")
+        else:
+            param_parts.append(f"{key}={value}")
+    
+    return ", ".join(param_parts)
 
 def computeErrorProbability(**params) -> float:
     results = call_exponents(
@@ -201,33 +244,71 @@ class TransmissionSystemAgent:
     def generate_response_stream(self, user_message: str) -> Generator[str, None, None]:
         if self.model is None or self.tokenizer is None:
             raise RuntimeError("Model not loaded. Call load_model() first.")
-        prompt = self._build_conversation_context(user_message)
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
-        streamer = TextIteratorStreamer(
-            self.tokenizer, 
-            timeout=10.0,
-            skip_prompt=True,
-            skip_special_tokens=True
-        )
-        generation_kwargs = {
-            **inputs,
-            "max_new_tokens": 200,
-            "temperature": 0.1,
-            "top_p": 0.9,              
-            "do_sample": True,
-            "repetition_penalty": 1.05,
-            "pad_token_id": self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
-            "eos_token_id": self.tokenizer.eos_token_id,
-            "streamer": streamer,
-        }
-        generation_thread = threading.Thread(
-            target=self.model.generate,
-            kwargs=generation_kwargs
-        )
-        generation_thread.start()
-        for new_text in streamer:
-            yield new_text
-        generation_thread.join()
+        
+        try:
+            prompt = self._build_conversation_context(user_message)
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
+            
+            # Increase timeout and add better error handling
+            streamer = TextIteratorStreamer(
+                self.tokenizer, 
+                timeout=30.0,  # Increased from 10.0 to 30.0
+                skip_prompt=True,
+                skip_special_tokens=True
+            )
+            
+            generation_kwargs = {
+                **inputs,
+                "max_new_tokens": 150,  # Reduced from 200 to 150
+                "temperature": 0.1,
+                "top_p": 0.9,              
+                "do_sample": True,
+                "repetition_penalty": 1.05,
+                "pad_token_id": self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
+                "eos_token_id": self.tokenizer.eos_token_id,
+                "streamer": streamer,
+                "early_stopping": True,  # Add early stopping
+                "num_beams": 1,  # Use greedy decoding for speed
+            }
+            
+            generation_thread = threading.Thread(
+                target=self.model.generate,
+                kwargs=generation_kwargs
+            )
+            generation_thread.start()
+            
+            # Add timeout handling for the streamer
+            try:
+                for new_text in streamer:
+                    yield new_text
+            except Exception as e:
+                logging.warning(f"Streamer error: {e}. Attempting fallback generation...")
+                # Fallback: generate without streaming
+                generation_thread.join(timeout=5.0)  # Wait for thread to finish
+                if generation_thread.is_alive():
+                    generation_thread.join(timeout=10.0)  # Force join
+                
+                # Try non-streaming generation as fallback
+                try:
+                    with torch.no_grad():
+                        outputs = self.model.generate(
+                            **{k: v for k, v in generation_kwargs.items() if k != 'streamer'},
+                            max_new_tokens=100,
+                            do_sample=False,  # Use greedy decoding for reliability
+                        )
+                    generated_text = self.tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
+                    yield generated_text
+                except Exception as fallback_error:
+                    logging.error(f"Fallback generation also failed: {fallback_error}")
+                    yield "I apologize, but I'm having trouble generating a response right now. Please try again."
+            
+            # Ensure thread is joined
+            if generation_thread.is_alive():
+                generation_thread.join(timeout=5.0)
+            
+        except Exception as e:
+            logging.error(f"Error in generate_response_stream: {e}")
+            yield "I apologize, but I encountered an error while processing your request. Please try again."
 
     def parse_function_calls(self, response: str) -> Tuple[Optional[str], List[FunctionCall]]:
         conversational_lines = []
@@ -405,7 +486,7 @@ class TransmissionSystemAgent:
 
     def format_computation_result(self, function_name: str, result: Any, params: Dict[str, Any]) -> str:
         """Asks the LLM to format a computation result into a clear, plain text response focusing on the result and its system effects."""
-        param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+        param_str = _build_complete_param_string(params, function_name)
         
         # Create function-specific prompts for clear, practical responses
         if function_name == 'computeErrorProbability':
@@ -450,7 +531,7 @@ Use plain text only (no LaTeX or special formatting). Focus on practical enginee
 
     def format_computation_result_with_context(self, function_name: str, requested_result: Any, all_metrics: Dict[str, float], params: Dict[str, Any]) -> str:
         """Asks the LLM to format a computation result with context from all three metrics for richer explanation."""
-        param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+        param_str = _build_complete_param_string(params, function_name)
         
         # Create function-specific prompts that include all three metrics for context
         if function_name == 'computeErrorProbability':
@@ -512,7 +593,18 @@ Use plain text only (no LaTeX or special formatting). Focus on practical enginee
         scenarios_summary = []
         for result in comparison_results:
             params = result['parameters']
-            param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+            
+            # Determine function name from the metric present in the result
+            if 'error_probability' in result:
+                function_name = 'computeErrorProbability'
+            elif 'error_exponent' in result:
+                function_name = 'computeErrorExponent'
+            elif 'optimal_rho' in result:
+                function_name = 'computeOptimalRho'
+            else:
+                function_name = 'computeErrorProbability'  # Default fallback
+            
+            param_str = _build_complete_param_string(params, function_name)
             
             # Get the specific metric that was computed
             if 'error_probability' in result:
@@ -778,7 +870,7 @@ class OpenRouterAgent:
 
     def format_computation_result(self, function_name: str, result: Any, params: Dict[str, Any]) -> str:
         """Asks the LLM to format a computation result into a clear, plain text response focusing on the result and its system effects."""
-        param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+        param_str = _build_complete_param_string(params, function_name)
         
         # Create function-specific prompts for clear, practical responses
         if function_name == 'computeErrorProbability':
@@ -823,7 +915,7 @@ Use plain text only (no LaTeX or special formatting). Focus on practical enginee
 
     def format_computation_result_with_context(self, function_name: str, requested_result: Any, all_metrics: Dict[str, float], params: Dict[str, Any]) -> str:
         """Asks the LLM to format a computation result with context from all three metrics for richer explanation."""
-        param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+        param_str = _build_complete_param_string(params, function_name)
         
         # Create function-specific prompts that include all three metrics for context
         if function_name == 'computeErrorProbability':
@@ -885,7 +977,18 @@ Use plain text only (no LaTeX or special formatting). Focus on practical enginee
         scenarios_summary = []
         for result in comparison_results:
             params = result['parameters']
-            param_str = ", ".join([f"{k}={v}" for k, v in params.items() if str(v).lower() not in ['unknown', 'undefined', 'none']])
+            
+            # Determine function name from the metric present in the result
+            if 'error_probability' in result:
+                function_name = 'computeErrorProbability'
+            elif 'error_exponent' in result:
+                function_name = 'computeErrorExponent'
+            elif 'optimal_rho' in result:
+                function_name = 'computeOptimalRho'
+            else:
+                function_name = 'computeErrorProbability'  # Default fallback
+            
+            param_str = _build_complete_param_string(params, function_name)
             
             # Get the specific metric that was computed
             if 'error_probability' in result:
