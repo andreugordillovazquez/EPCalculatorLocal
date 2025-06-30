@@ -252,7 +252,7 @@ class TransmissionSystemAgent:
             # Increase timeout and add better error handling
             streamer = TextIteratorStreamer(
                 self.tokenizer, 
-                timeout=30.0,  # Increased from 10.0 to 30.0
+                timeout=30.0,
                 skip_prompt=True,
                 skip_special_tokens=True
             )
@@ -639,9 +639,10 @@ Use plain text only (no LaTeX or special formatting). Focus on practical enginee
         return formatted_response
 
 # =============== OPENROUTER MODEL ================
+# If you want to use OpenRouter, you need to manually add the API key to the code. Be careful not to commit it to the repository.
 class OpenRouterAgent:
     def __init__(self, api_key, model="mistralai/mistral-7b-instruct"):
-        self.api_key = "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"
+        self.api_key = "sk-or-v1-..."
         self.model = model
         self.base_url = "https://openrouter.ai/api/v1"
         self.system_prompt = SYSTEM_PROMPT
