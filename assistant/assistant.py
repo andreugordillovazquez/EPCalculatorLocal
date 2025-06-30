@@ -267,7 +267,6 @@ class TransmissionSystemAgent:
                 "pad_token_id": self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
                 "eos_token_id": self.tokenizer.eos_token_id,
                 "streamer": streamer,
-                "early_stopping": True,  # Add early stopping
                 "num_beams": 1,  # Use greedy decoding for speed
             }
             
@@ -642,7 +641,7 @@ Use plain text only (no LaTeX or special formatting). Focus on practical enginee
 # =============== OPENROUTER MODEL ================
 class OpenRouterAgent:
     def __init__(self, api_key, model="mistralai/mistral-7b-instruct"):
-        self.api_key = "sk---" # TO-DO: Add API key here
+        self.api_key = "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"
         self.model = model
         self.base_url = "https://openrouter.ai/api/v1"
         self.system_prompt = SYSTEM_PROMPT
